@@ -199,8 +199,8 @@
             {
               "value": 7,
               "text": {
-                "default": "Medicina Nuclear",
-                "en": "Nuclear Medicine"
+                "default": "Urgencias",
+                "en": "Emergency"
               }
             },
             {
@@ -313,14 +313,23 @@
           "type": "html",
           "name": "servicios_externos_diagnostico_pregunta_5",
           "html": {
-            "default": "Por favor evalúe los siguientes atributos del servicio en una escala del 1 al 5; donde 5 es Muy Satisfecho, y 1 Muy\ninsatisfecho",
-            "en": "Please evaluate the following service attributes on a scale from 1 to 5; where 5 is Very Satisfied, and 1 is Very\nDissatisfied"
+            "default": "Por favor evalúe los siguientes atributos del servicio: EXCELENTE, BUENO, REGULAR o MALO.",
+            "en": "Please rate the following service attributes: EXCELLENT, GOOD, FAIR or POOR."
           },
           "visibleIf": "{servicios_externos_diagnostico_pregunta_3} != ''"
         },
         {
-          "type": "rating",
+          "type": "radiogroup",
           "name": "servicios_externos_diagnostico_pregunta_6",
+          "choices": [
+            {
+              "value": "excellent",
+              "text": { "default": "EXCELENTE", "en": "EXCELLENT" }
+            },
+            { "value": "good", "text": { "default": "BUENO", "en": "GOOD" } },
+            { "value": "fair", "text": { "default": "REGULAR", "en": "FAIR" } },
+            { "value": "poor", "text": { "default": "MALO", "en": "POOR" } }
+          ],
           "title": {
             "default": "Satisfacción general con el servicio",
             "en": "Overall satisfaction with the service"
@@ -329,8 +338,17 @@
           "isRequired": true
         },
         {
-          "type": "rating",
+          "type": "radiogroup",
           "name": "servicios_externos_diagnostico_pregunta_7",
+          "choices": [
+            {
+              "value": "excellent",
+              "text": { "default": "EXCELENTE", "en": "EXCELLENT" }
+            },
+            { "value": "good", "text": { "default": "BUENO", "en": "GOOD" } },
+            { "value": "fair", "text": { "default": "REGULAR", "en": "FAIR" } },
+            { "value": "poor", "text": { "default": "MALO", "en": "POOR" } }
+          ],
           "title": {
             "default": "Atención del personal que lo recibió en el servicio",
             "en": "Service staff's attentiveness upon arrival"
@@ -339,8 +357,17 @@
           "isRequired": true
         },
         {
-          "type": "rating",
+          "type": "radiogroup",
           "name": "servicios_externos_diagnostico_pregunta_8",
+          "choices": [
+            {
+              "value": "excellent",
+              "text": { "default": "EXCELENTE", "en": "EXCELLENT" }
+            },
+            { "value": "good", "text": { "default": "BUENO", "en": "GOOD" } },
+            { "value": "fair", "text": { "default": "REGULAR", "en": "FAIR" } },
+            { "value": "poor", "text": { "default": "MALO", "en": "POOR" } }
+          ],
           "title": {
             "default": "Claridad de las indicaciones para presentarse al estudio (aseo, ayuno, etc.)",
             "en": "Clarity of instructions for preparing for the study (hygiene, fasting, etc.)"
@@ -349,8 +376,17 @@
           "isRequired": true
         },
         {
-          "type": "rating",
+          "type": "radiogroup",
           "name": "servicios_externos_diagnostico_pregunta_9",
+          "choices": [
+            {
+              "value": "excellent",
+              "text": { "default": "EXCELENTE", "en": "EXCELLENT" }
+            },
+            { "value": "good", "text": { "default": "BUENO", "en": "GOOD" } },
+            { "value": "fair", "text": { "default": "REGULAR", "en": "FAIR" } },
+            { "value": "poor", "text": { "default": "MALO", "en": "POOR" } }
+          ],
           "title": {
             "default": "Tiempo de espera para realizarse el estudio",
             "en": "Waiting time to undergo the study"
@@ -359,8 +395,17 @@
           "isRequired": true
         },
         {
-          "type": "rating",
+          "type": "radiogroup",
           "name": "servicios_externos_diagnostico_pregunta_10",
+          "choices": [
+            {
+              "value": "excellent",
+              "text": { "default": "EXCELENTE", "en": "EXCELLENT" }
+            },
+            { "value": "good", "text": { "default": "BUENO", "en": "GOOD" } },
+            { "value": "fair", "text": { "default": "REGULAR", "en": "FAIR" } },
+            { "value": "poor", "text": { "default": "MALO", "en": "POOR" } }
+          ],
           "title": {
             "default": "Servicio y habilidades del personal técnico, de enfermería o médico durante el procedimiento",
             "en": "Service and skills of technical, nursing, or medical staff during the procedure"
@@ -369,8 +414,17 @@
           "isRequired": true
         },
         {
-          "type": "rating",
+          "type": "radiogroup",
           "name": "servicios_externos_diagnostico_pregunta_11",
+          "choices": [
+            {
+              "value": "excellent",
+              "text": { "default": "EXCELENTE", "en": "EXCELLENT" }
+            },
+            { "value": "good", "text": { "default": "BUENO", "en": "GOOD" } },
+            { "value": "fair", "text": { "default": "REGULAR", "en": "FAIR" } },
+            { "value": "poor", "text": { "default": "MALO", "en": "POOR" } }
+          ],
           "title": {
             "default": "Condiciones físicas y limpieza de las instalaciones",
             "en": "Physical conditions and cleanliness of the facilities"
@@ -379,8 +433,17 @@
           "isRequired": true
         },
         {
-          "type": "rating",
+          "type": "radiogroup",
           "name": "servicios_externos_diagnostico_pregunta_21",
+          "choices": [
+            {
+              "value": "excellent",
+              "text": { "default": "EXCELENTE", "en": "EXCELLENT" }
+            },
+            { "value": "good", "text": { "default": "BUENO", "en": "GOOD" } },
+            { "value": "fair", "text": { "default": "REGULAR", "en": "FAIR" } },
+            { "value": "poor", "text": { "default": "MALO", "en": "POOR" } }
+          ],
           "title": {
             "default": "Facilidad y rapidez para agendar cita",
             "en": "Ease and speed of scheduling an appointment"
@@ -389,8 +452,17 @@
           "isRequired": true
         },
         {
-          "type": "rating",
+          "type": "radiogroup",
           "name": "servicios_externos_diagnostico_pregunta_22",
+          "choices": [
+            {
+              "value": "excellent",
+              "text": { "default": "EXCELENTE", "en": "EXCELLENT" }
+            },
+            { "value": "good", "text": { "default": "BUENO", "en": "GOOD" } },
+            { "value": "fair", "text": { "default": "REGULAR", "en": "FAIR" } },
+            { "value": "poor", "text": { "default": "MALO", "en": "POOR" } }
+          ],
           "title": {
             "default": "Suficiencia y claridad de la información previa para la realización de su check-up y/o estudios",
             "en": "Sufficiency and clarity of prior information for your check-up and/or studies"
@@ -399,8 +471,17 @@
           "isRequired": true
         },
         {
-          "type": "rating",
+          "type": "radiogroup",
           "name": "servicios_externos_diagnostico_pregunta_23",
+          "choices": [
+            {
+              "value": "excellent",
+              "text": { "default": "EXCELENTE", "en": "EXCELLENT" }
+            },
+            { "value": "good", "text": { "default": "BUENO", "en": "GOOD" } },
+            { "value": "fair", "text": { "default": "REGULAR", "en": "FAIR" } },
+            { "value": "poor", "text": { "default": "MALO", "en": "POOR" } }
+          ],
           "title": {
             "default": "Atención y amabilidad del personal de admisión del servicio",
             "en": "Attentiveness and friendliness of the service admission staff"
@@ -409,8 +490,17 @@
           "isRequired": true
         },
         {
-          "type": "rating",
+          "type": "radiogroup",
           "name": "servicios_externos_diagnostico_pregunta_24",
+          "choices": [
+            {
+              "value": "excellent",
+              "text": { "default": "EXCELENTE", "en": "EXCELLENT" }
+            },
+            { "value": "good", "text": { "default": "BUENO", "en": "GOOD" } },
+            { "value": "fair", "text": { "default": "REGULAR", "en": "FAIR" } },
+            { "value": "poor", "text": { "default": "MALO", "en": "POOR" } }
+          ],
           "title": {
             "default": "Condiciones físicas y de limpieza de las instalaciones y áreas de atención general",
             "en": "Physical conditions and cleanliness of the facilities and general care areas"
@@ -419,8 +509,17 @@
           "isRequired": true
         },
         {
-          "type": "rating",
+          "type": "radiogroup",
           "name": "servicios_externos_diagnostico_pregunta_25",
+          "choices": [
+            {
+              "value": "excellent",
+              "text": { "default": "EXCELENTE", "en": "EXCELLENT" }
+            },
+            { "value": "good", "text": { "default": "BUENO", "en": "GOOD" } },
+            { "value": "fair", "text": { "default": "REGULAR", "en": "FAIR" } },
+            { "value": "poor", "text": { "default": "MALO", "en": "POOR" } }
+          ],
           "title": {
             "default": "Tiempos de espera y de atención de cada especialidad y servicio",
             "en": "Waiting times and service duration for each specialty and service"
@@ -429,8 +528,17 @@
           "isRequired": true
         },
         {
-          "type": "rating",
+          "type": "radiogroup",
           "name": "servicios_externos_diagnostico_pregunta_26",
+          "choices": [
+            {
+              "value": "excellent",
+              "text": { "default": "EXCELENTE", "en": "EXCELLENT" }
+            },
+            { "value": "good", "text": { "default": "BUENO", "en": "GOOD" } },
+            { "value": "fair", "text": { "default": "REGULAR", "en": "FAIR" } },
+            { "value": "poor", "text": { "default": "MALO", "en": "POOR" } }
+          ],
           "title": {
             "default": "Habilidades técnicas y atención del personal de enfermería",
             "en": "Technical skills and attentiveness of nursing staff"
@@ -439,8 +547,17 @@
           "isRequired": true
         },
         {
-          "type": "rating",
+          "type": "radiogroup",
           "name": "servicios_externos_diagnostico_pregunta_27",
+          "choices": [
+            {
+              "value": "excellent",
+              "text": { "default": "EXCELENTE", "en": "EXCELLENT" }
+            },
+            { "value": "good", "text": { "default": "BUENO", "en": "GOOD" } },
+            { "value": "fair", "text": { "default": "REGULAR", "en": "FAIR" } },
+            { "value": "poor", "text": { "default": "MALO", "en": "POOR" } }
+          ],
           "title": {
             "default": "Profesionalismo y atención del personal médico",
             "en": "Professionalism and attentiveness of medical staff"
@@ -449,8 +566,17 @@
           "isRequired": true
         },
         {
-          "type": "rating",
+          "type": "radiogroup",
           "name": "servicios_externos_diagnostico_pregunta_28",
+          "choices": [
+            {
+              "value": "excellent",
+              "text": { "default": "EXCELENTE", "en": "EXCELLENT" }
+            },
+            { "value": "good", "text": { "default": "BUENO", "en": "GOOD" } },
+            { "value": "fair", "text": { "default": "REGULAR", "en": "FAIR" } },
+            { "value": "poor", "text": { "default": "MALO", "en": "POOR" } }
+          ],
           "title": {
             "default": "Satisfacción general con el servicio recibido",
             "en": "Overall satisfaction with the received service"
