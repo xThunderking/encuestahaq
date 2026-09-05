@@ -1,0 +1,28 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: encuestashaq_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_local_password
+      MYSQL_DATABASE: encuestashaq
+      MYSQL_USER: encuestashaq_user
+      MYSQL_PASSWORD: encuestashaq_local_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - encuestashaq_mysql_data:/var/lib/mysql
+    healthcheck:
+      test:
+        - CMD
+        - mysqladmin
+        - ping
+        - -h
+        - localhost
+        - -proot_local_password
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  encuestashaq_mysql_data:

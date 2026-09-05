@@ -1,0 +1,513 @@
+{
+  "pages": [
+    {
+      "name": "Página1",
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "servicios_externos_diagnostico_pregunta_32",
+          "title": {
+            "default": "¿Gustas dejarnos tus datos de contacto?",
+            "en": "Would you like to leave us your contact information?"
+          },
+          "choices": [
+            {
+              "value": "1",
+              "text": {
+                "default": "Si",
+                "en": "Yes"
+              }
+            },
+            {
+              "value": "0",
+              "text": "No"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "name": "servicios_externos_diagnostico_pregunta_30",
+          "title": {
+            "default": "Correo",
+            "en": "Email"
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_32} = 1",
+          "validators": [
+            {
+              "type": "email",
+              "text": {
+                "default": "El correo electrónico ingresado no es válido. Por favor, verifíquelo.",
+                "en": "The email address entered is not valid. Please verify it."
+              }
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "name": "servicios_externos_diagnostico_pregunta_31",
+          "title": {
+            "default": "Telefono",
+            "en": "Phone"
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_32} = 1",
+          "validators": [
+            {
+              "type": "regex",
+              "text": {
+                "default": "Ingrese un número.",
+                "en": "Please enter a number."
+              },
+              "regex": "^[0-9]+$"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "name": "servicios_externos_diagnostico_pregunta_29",
+          "title": {
+            "default": "Nombre y Apellido",
+            "en": "First and Last Name"
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_32} = 1"
+        },
+        {
+          "type": "html",
+          "name": "servicios_externos_diagnostico_pregunta_16",
+          "html": {
+            "default": "Gracias por confiar en Hospital Angeles Health System para su atención médica. Nos gustaría conocer su opinión sobre la calidad de los servicios recibidos en nuestras instalaciones. Sus respuestas nos ayudarán a mejorar, dedique algunos minutos para compartir su experiencia.",
+            "en": "Thank you for trusting Hospital Angeles Health System for your medical care. We would like to hear your opinion about the quality of services you received at our facilities. Your feedback will help us improve — please take a few minutes to share your experience."
+          }
+        },
+        {
+          "type": "radiogroup",
+          "name": "servicios_externos_diagnostico_pregunta_1",
+          "title": {
+            "default": "¿Qué lo motivó a elegir nuestros servicios para su atención médica?",
+            "en": "What motivated you to choose our services for your medical care?"
+          },
+          "choices": [
+            {
+              "value": 2,
+              "text": {
+                "default": "Convenio",
+                "en": "Insurance Plan"
+              }
+            },
+            {
+              "value": 0,
+              "text": {
+                "default": "Solicitud de su médico",
+                "en": "Physician's Recommendation"
+              }
+            },
+            {
+              "value": 1,
+              "text": {
+                "default": "Referencia amigo/familiar",
+                "en": "Friend/Family Referral"
+              }
+            },
+            {
+              "value": 7,
+              "text": {
+                "default": "Recurrencia al servicio",
+                "en": "Returning Patient"
+              }
+            },
+            {
+              "value": 6,
+              "text": {
+                "default": "Publicidad en medios",
+                "en": "Media Advertising"
+              }
+            },
+            {
+              "value": 3,
+              "text": {
+                "default": "Ubicación conveniente",
+                "en": "Convenient Location"
+              }
+            },
+            {
+              "value": 4,
+              "text": {
+                "default": "Confianza en la marca",
+                "en": "Brand Trust"
+              }
+            },
+            {
+              "value": 5,
+              "text": {
+                "default": "Otro:",
+                "en": "Other:"
+              }
+            }
+          ],
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "servicios_externos_diagnostico_pregunta_17",
+          "title": {
+            "default": "¿Con que empresa?",
+            "en": "Which company?"
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_1} = 2",
+          "enableIf": "{servicios_externos_diagnostico_pregunta_1} = 2",
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "servicios_externos_diagnostico_pregunta_2",
+          "title": {
+            "default": "¿Cuál?",
+            "en": "Which one?"
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_1} = 5",
+          "enableIf": "{servicios_externos_diagnostico_pregunta_1} = 5",
+          "isRequired": true
+        },
+        {
+          "type": "radiogroup",
+          "name": "servicios_externos_diagnostico_pregunta_3",
+          "title": {
+            "default": "Indique por favor el servicio en que recibió atención",
+            "en": "Please indicate the service you received care from"
+          },
+          "choices": [
+            {
+              "value": 6,
+              "text": {
+                "default": "Laboratorio",
+                "en": "Laboratory"
+              }
+            },
+            {
+              "value": 0,
+              "text": {
+                "default": "Banco de Sangre",
+                "en": "Blood Bank"
+              }
+            },
+            {
+              "value": 2,
+              "text": {
+                "default": "Colonoscopia/Endoscopia",
+                "en": "Colonoscopy/Endoscopy"
+              }
+            },
+            {
+              "value": 7,
+              "text": {
+                "default": "Medicina Nuclear",
+                "en": "Nuclear Medicine"
+              }
+            },
+            {
+              "value": 1,
+              "text": "Check-up"
+            },
+            {
+              "value": 5,
+              "text": {
+                "default": "Imagenología",
+                "en": "Imaging"
+              }
+            },
+            {
+              "value": 4,
+              "text": {
+                "default": "Hemodinamia",
+                "en": "Hemodynamics"
+              }
+            },
+            {
+              "value": 3,
+              "text": {
+                "default": "Hemodiálisis",
+                "en": "Hemodialysis"
+              }
+            },
+            {
+              "value": 8,
+              "text": {
+                "default": "Otro",
+                "en": "Other"
+              }
+            }
+          ],
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "servicios_externos_diagnostico_pregunta_18",
+          "title": {
+            "default": "¿Cuál?",
+            "en": "Which one?"
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_3} = 8",
+          "enableIf": "{servicios_externos_diagnostico_pregunta_3} = 8",
+          "isRequired": true
+        },
+        {
+          "type": "radiogroup",
+          "name": "servicios_externos_diagnostico_pregunta_20",
+          "title": {
+            "default": "Indique por favor los servicios en que recibió atención",
+            "en": "Please indicate the services you received care from"
+          },
+          "choices": [
+            {
+              "value": 0,
+              "text": {
+                "default": "Check-up Femenino",
+                "en": "Female Check-up"
+              }
+            },
+            {
+              "value": 1,
+              "text": {
+                "default": "Check-up Masculino",
+                "en": "Male Check-up"
+              }
+            },
+            {
+              "value": 2,
+              "text": {
+                "default": "Consulta de Medicina General",
+                "en": "General Medicine Consultation"
+              },
+              "visibleIf": "false"
+            },
+            {
+              "value": 3,
+              "text": {
+                "default": "Consulta de Medicina Interna",
+                "en": "Internal Medicine Consultation"
+              },
+              "visibleIf": "false"
+            }
+          ],
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_3} = 1",
+          "isRequired": true
+        },
+        {
+          "type": "html",
+          "name": "servicios_externos_diagnostico_pregunta_4",
+          "html": {
+            "default": "<br> <br> <b>Evaluación General</br></b> ",
+            "en": "<br> <br> <b>General Evaluation</br></b> "
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_3} != 1 and {servicios_externos_diagnostico_pregunta_3} != ''"
+        },
+        {
+          "type": "html",
+          "name": "servicios_externos_diagnostico_pregunta_19",
+          "html": {
+            "default": "<br> <br> <b>Evaluación General Check-Up </br></b> ",
+            "en": "<br> <br> <b>General Check-Up Evaluation </br></b> "
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_3} = 1"
+        },
+        {
+          "type": "html",
+          "name": "servicios_externos_diagnostico_pregunta_5",
+          "html": {
+            "default": "Por favor evalúe los siguientes atributos del servicio en una escala del 1 al 5; donde 5 es Muy Satisfecho, y 1 Muy\ninsatisfecho",
+            "en": "Please evaluate the following service attributes on a scale from 1 to 5; where 5 is Very Satisfied, and 1 is Very\nDissatisfied"
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_3} != ''"
+        },
+        {
+          "type": "rating",
+          "name": "servicios_externos_diagnostico_pregunta_6",
+          "title": {
+            "default": "Satisfacción general con el servicio",
+            "en": "Overall satisfaction with the service"
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_3}  != 1 and {servicios_externos_diagnostico_pregunta_3}  != ''",
+          "isRequired": true
+        },
+        {
+          "type": "rating",
+          "name": "servicios_externos_diagnostico_pregunta_7",
+          "title": {
+            "default": "Atención del personal que lo recibió en el servicio",
+            "en": "Service staff's attentiveness upon arrival"
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_3} != 1 and {servicios_externos_diagnostico_pregunta_3} != ''",
+          "isRequired": true
+        },
+        {
+          "type": "rating",
+          "name": "servicios_externos_diagnostico_pregunta_8",
+          "title": {
+            "default": "Claridad de las indicaciones para presentarse al estudio (aseo, ayuno, etc.)",
+            "en": "Clarity of instructions for preparing for the study (hygiene, fasting, etc.)"
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_3} != 1 and {servicios_externos_diagnostico_pregunta_3} != ''",
+          "isRequired": true
+        },
+        {
+          "type": "rating",
+          "name": "servicios_externos_diagnostico_pregunta_9",
+          "title": {
+            "default": "Tiempo de espera para realizarse el estudio",
+            "en": "Waiting time to undergo the study"
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_3} != 1 and {servicios_externos_diagnostico_pregunta_3} != ''",
+          "isRequired": true
+        },
+        {
+          "type": "rating",
+          "name": "servicios_externos_diagnostico_pregunta_10",
+          "title": {
+            "default": "Servicio y habilidades del personal técnico, de enfermería o médico durante el procedimiento",
+            "en": "Service and skills of technical, nursing, or medical staff during the procedure"
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_3} != 1 and {servicios_externos_diagnostico_pregunta_3} != ''",
+          "isRequired": true
+        },
+        {
+          "type": "rating",
+          "name": "servicios_externos_diagnostico_pregunta_11",
+          "title": {
+            "default": "Condiciones físicas y limpieza de las instalaciones",
+            "en": "Physical conditions and cleanliness of the facilities"
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_3} != 1 and {servicios_externos_diagnostico_pregunta_3} != ''",
+          "isRequired": true
+        },
+        {
+          "type": "rating",
+          "name": "servicios_externos_diagnostico_pregunta_21",
+          "title": {
+            "default": "Facilidad y rapidez para agendar cita",
+            "en": "Ease and speed of scheduling an appointment"
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_3} = 1",
+          "isRequired": true
+        },
+        {
+          "type": "rating",
+          "name": "servicios_externos_diagnostico_pregunta_22",
+          "title": {
+            "default": "Suficiencia y claridad de la información previa para la realización de su check-up y/o estudios",
+            "en": "Sufficiency and clarity of prior information for your check-up and/or studies"
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_3} = 1",
+          "isRequired": true
+        },
+        {
+          "type": "rating",
+          "name": "servicios_externos_diagnostico_pregunta_23",
+          "title": {
+            "default": "Atención y amabilidad del personal de admisión del servicio",
+            "en": "Attentiveness and friendliness of the service admission staff"
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_3} = 1",
+          "isRequired": true
+        },
+        {
+          "type": "rating",
+          "name": "servicios_externos_diagnostico_pregunta_24",
+          "title": {
+            "default": "Condiciones físicas y de limpieza de las instalaciones y áreas de atención general",
+            "en": "Physical conditions and cleanliness of the facilities and general care areas"
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_3} = 1",
+          "isRequired": true
+        },
+        {
+          "type": "rating",
+          "name": "servicios_externos_diagnostico_pregunta_25",
+          "title": {
+            "default": "Tiempos de espera y de atención de cada especialidad y servicio",
+            "en": "Waiting times and service duration for each specialty and service"
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_3} = 1",
+          "isRequired": true
+        },
+        {
+          "type": "rating",
+          "name": "servicios_externos_diagnostico_pregunta_26",
+          "title": {
+            "default": "Habilidades técnicas y atención del personal de enfermería",
+            "en": "Technical skills and attentiveness of nursing staff"
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_3} = 1",
+          "isRequired": true
+        },
+        {
+          "type": "rating",
+          "name": "servicios_externos_diagnostico_pregunta_27",
+          "title": {
+            "default": "Profesionalismo y atención del personal médico",
+            "en": "Professionalism and attentiveness of medical staff"
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_3} = 1",
+          "isRequired": true
+        },
+        {
+          "type": "rating",
+          "name": "servicios_externos_diagnostico_pregunta_28",
+          "title": {
+            "default": "Satisfacción general con el servicio recibido",
+            "en": "Overall satisfaction with the received service"
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_3} = 1",
+          "isRequired": true
+        },
+        {
+          "type": "html",
+          "name": "servicios_externos_diagnostico_pregunta_12",
+          "html": {
+            "default": "<br><br><b>Comentarios y Sugerencias</b><br>",
+            "en": "<br><br><b>Comments and Suggestions</b><br>"
+          }
+        },
+        {
+          "type": "rating",
+          "name": "servicios_externos_diagnostico_pregunta_14",
+          "title": {
+            "default": "En una escala de 0 a 10, ¿qué tan probable es que recomiende Hospital Angeles Health System a familiares y amigos?",
+            "en": "On a scale of 0 to 10, how likely are you to recommend Hospital Angeles Health System to family and friends?"
+          },
+          "rateValues": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+          "isRequired": true,
+          "rateMax": 11
+        },
+        {
+          "type": "comment",
+          "name": "servicios_externos_diagnostico_pregunta_15",
+          "title": {
+            "default": "¡Nos gustaría saber más sobre su experiencia! Comparta sus comentarios y recomendaciones para ayudarnos a brindarle un mejor servicio:",
+            "en": "We would like to know more about your experience! Share your comments and recommendations to help us provide you with better service:"
+          },
+          "isRequired": true
+        },
+        {
+          "type": "html",
+          "name": "aviso_privacidad_footer",
+          "html": {
+            "default": "<div style='text-align: center; margin-top: 40px; border-top: 1px solid #ccc; padding-top: 20px;'><a href='https://hospitalangeles.com/aviso-de-privacidad' target='_blank' rel='noopener noreferrer' style='color: #0063A6; text-decoration: underline; font-size: 14px;'>Aviso de Privacidad</a></div>",
+            "en": "<div style='text-align: center; margin-top: 40px; border-top: 1px solid #ccc; padding-top: 20px;'><a href='https://hospitalangeles.com/aviso-de-privacidad' target='_blank' rel='noopener noreferrer' style='color: #0063A6; text-decoration: underline; font-size: 14px;'>Privacy Notice</a></div>"
+          }
+        }
+      ]
+    }
+  ],
+  "locale": "es",
+  "widthMode": "static",
+  "width": "1240px",
+  "showQuestionNumbers": "on",
+  "completeText": {
+    "default": "Finalizar",
+    "en": "Finish"
+  },
+  "requiredText": "(*) Respuesta Obligatoria",
+  "completedHtml": {
+    "default": "<h2>Gracias por compartir su experiencia</h2><p>Esta es una vista previa. Sus respuestas no se han enviado ni guardado.</p>",
+    "en": "<h2>Thank you for sharing your experience</h2><p>This is a preview. Your answers have not been sent or saved.</p>"
+  }
+}
