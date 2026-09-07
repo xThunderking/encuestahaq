@@ -1,6 +1,6 @@
 # Encuestas HAQ
 
-Sistema de encuestas de satisfaccion hospitalaria. Esta etapa solo define la arquitectura inicial del proyecto y deja preparada la base tecnica para las siguientes fases.
+Sistema de encuestas de satisfaccion hospitalaria con cuestionario responsivo y almacenamiento de respuestas en MySQL.
 
 ## Stack
 
@@ -57,12 +57,13 @@ La base de datos debe llamarse exactamente:
 encuestashaq
 ```
 
-Estado actual: Prisma esta configurado solo con `generator` y `datasource`. Todavia no existen tablas, modelos, migraciones ni datos de prueba.
+Estado actual: Prisma incluye el modelo `SurveyResponse` y una migracion para guardar cada encuesta contestada. Las respuestas completas se almacenan como JSON junto con el idioma y la fecha de envio.
 
 ## Iniciar MySQL
 
 ```bash
-docker compose up -d
+docker compose up -d --wait
+npm run db:migrate
 ```
 
 El contenedor local se llama `encuestashaq_mysql` y usa la imagen `mysql:8.4`.
@@ -87,13 +88,15 @@ La aplicacion queda disponible en:
 http://localhost:3000
 ```
 
-## Rutas provisionales
+## Rutas
 
-- `/`: pantalla inicial del sistema.
+- `/`: cuestionario de satisfaccion.
 - `/encuesta/[token]`: marcador provisional del modulo de encuestas.
-- `/admin/login`: marcador provisional de acceso administrativo.
-- `/admin`: marcador provisional del panel administrativo.
+- `/admin`: acceso administrativo y panel de encuestas. En desarrollo usa
+  `Admin` como usuario y contraseña.
+- `/admin/login`: redirige al acceso administrativo en `/admin`.
 - `/api/health`: estado basico de la aplicacion, sin consultar la base de datos.
+- `/api/survey-responses`: guarda las encuestas completadas.
 
 ## Comandos de calidad
 
@@ -114,14 +117,13 @@ npm run dev -- --hostname 127.0.0.1
 npm run test:e2e
 ```
 
-Comandos de Prisma permitidos en esta etapa:
+Comandos de Prisma:
 
 ```bash
 npm run db:generate
+npm run db:migrate
 npm run db:studio
 ```
-
-No hay scripts para migraciones, `db push` ni seeds.
 
 ## Estructura de carpetas
 
@@ -137,14 +139,9 @@ tests/
 docs/
 ```
 
-Los modulos existen como contenedores de responsabilidad. No se han creado servicios, repositorios, modelos ficticios ni implementaciones funcionales completas.
-
 ## Proximos pasos
 
-- Definir el modelo de datos en una siguiente etapa.
-- Implementar autenticacion administrativa.
-- Implementar el cuestionario con SurveyJS.
-- Registrar respuestas.
+- Sustituir las credenciales administrativas de desarrollo antes de publicar.
 - Construir reportes y exportaciones.
 - Configurar envio de correos.
 - Agregar auditoria.

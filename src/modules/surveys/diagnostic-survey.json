@@ -633,7 +633,7 @@
   },
   "requiredText": "(*) Respuesta Obligatoria",
   "completedHtml": {
-    "default": "<h2>Gracias por compartir su experiencia</h2><p>Esta es una vista previa. Sus respuestas no se han enviado ni guardado.</p>",
-    "en": "<h2>Thank you for sharing your experience</h2><p>This is a preview. Your answers have not been sent or saved.</p>"
+    "default": "<h2>Su opinión es muy valiosa para Hospital Angeles Querétaro</h2><p>Gracias por compartir su experiencia. Sus comentarios nos ayudan a seguir mejorando la atención que brindamos cada día.</p>",
+    "en": "<h2>Your feedback is valuable to Hospital Angeles Querétaro</h2><p>Thank you for sharing your experience. Your comments help us improve the care we provide every day.</p>"
   }
 }

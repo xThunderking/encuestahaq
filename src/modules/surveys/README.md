@@ -1,3 +1,3 @@
 # Surveys
 
-Contendra la definicion y flujo del cuestionario cuando se implemente el modulo de encuestas.
+Contiene la definicion y el flujo visual del cuestionario de servicios externos de diagnostico.

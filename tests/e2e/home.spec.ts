@@ -8,10 +8,17 @@ async function chooseService(page: Page, service = "Urgencias") {
   await page.getByRole("button", { name: "Continuar", exact: true }).click();
 }
 
-test("three steps preserve answers and finish without saving", async ({
+test("three steps preserve answers and submit the completed survey", async ({
   page,
 }) => {
   const writes: string[] = [];
+  await page.route("**/api/survey-responses", async (route) => {
+    await route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: JSON.stringify({ id: 1, submittedAt: new Date().toISOString() }),
+    });
+  });
   page.on("request", (r) => {
     if (["POST", "PUT", "PATCH", "DELETE"].includes(r.method()))
       writes.push(r.url());
@@ -38,9 +45,11 @@ test("three steps preserve answers and finish without saving", async ({
   await expect(page.getByText("Correo", { exact: true })).not.toBeVisible();
   await page.getByRole("button", { name: "Finalizar", exact: true }).click();
   await expect(
-    page.getByText("Gracias por compartir su experiencia", { exact: true }),
+    page.getByRole("heading", {
+      name: "Su opinión es muy valiosa para Hospital Angeles Querétaro",
+    }),
   ).toBeVisible();
-  expect(writes).toEqual([]);
+  expect(writes).toEqual([expect.stringContaining("/api/survey-responses")]);
   await page.reload();
   await expect(page.getByRole("radio", { checked: true })).toHaveCount(0);
 });
@@ -87,4 +96,35 @@ test("mobile has large targets and visible rating options", async ({
     path: "test-results/survey-mobile.png",
     fullPage: true,
   });
+});
+
+test("layout has no horizontal overflow across device sizes", async ({
+  page,
+}) => {
+  const viewports = [
+    { width: 280, height: 653 },
+    { width: 320, height: 568 },
+    { width: 390, height: 844 },
+    { width: 667, height: 375 },
+    { width: 768, height: 1024 },
+    { width: 1024, height: 768 },
+    { width: 1366, height: 768 },
+    { width: 1920, height: 1080 },
+    { width: 3840, height: 2160 },
+  ];
+
+  for (const viewport of viewports) {
+    await page.setViewportSize(viewport);
+    await page.goto("/");
+    await expect(
+      page.getByRole("heading", { name: "Su experiencia nos importa" }),
+    ).toBeVisible();
+    const widths = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      document: document.documentElement.scrollWidth,
+      body: document.body.scrollWidth,
+    }));
+    expect(widths.document).toBeLessThanOrEqual(widths.viewport);
+    expect(widths.body).toBeLessThanOrEqual(widths.viewport);
+  }
 });

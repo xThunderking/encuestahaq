@@ -1,14 +1,14 @@
 # Arquitectura
 
-Este proyecto usa una arquitectura modular sobre Next.js con App Router. La etapa actual prepara carpetas, configuracion y puntos de entrada provisionales sin implementar datos ni funcionalidad completa.
+Este proyecto usa una arquitectura modular sobre Next.js con App Router. El cuestionario publico envia sus respuestas a un Route Handler, que las valida con Zod y las almacena mediante Prisma.
 
-Estado actual de la base de datos: creada, vacia y sin tablas.
+Estado actual de la base de datos: incluye la tabla `survey_responses` para conservar las respuestas, el idioma y la fecha de cada envio.
 
 ## Modulos
 
 - `src/app`: rutas publicas, administrativas y endpoints HTTP.
 - `src/components`: componentes reutilizables separados por contexto.
-- `src/modules/auth`: autenticacion administrativa futura.
+- `src/lib/security`: firma y validacion de la sesion administrativa.
 - `src/modules/surveys`: definicion y ejecucion futura de encuestas.
 - `src/modules/invitations`: invitaciones y tokens futuros.
 - `src/modules/responses`: captura y consulta futura de respuestas.
@@ -24,7 +24,7 @@ El area publica incluye `/` y `/encuesta/[token]`. La ruta de encuesta solo mues
 
 ## Area administrativa
 
-El area administrativa incluye `/admin/login` y `/admin`. La autenticacion real sera implementada posteriormente. La ruta `/admin` no esta protegida en esta etapa y no puede publicarse asi en produccion.
+El area administrativa se encuentra en `/admin`. La misma ruta muestra el formulario de acceso cuando no existe una sesion valida y, tras autenticar, consulta estadisticas y las 25 respuestas mas recientes. La sesion se guarda en una cookie `HttpOnly` firmada y expira despues de ocho horas. `/admin/login` redirige a `/admin`.
 
 ## Encuestas
 
@@ -32,7 +32,7 @@ El modulo futuro de encuestas usara SurveyJS mediante `survey-core` y `survey-re
 
 ## Respuestas
 
-El modulo futuro de respuestas se encargara de guardar, consultar y preparar datos para analisis. En esta etapa no existen tablas ni modelos para respuestas.
+El modulo de respuestas guarda cada encuesta completa y prepara los datos que consume el panel administrativo.
 
 ## Reportes
 
@@ -48,7 +48,7 @@ El modulo futuro de auditoria registrara eventos administrativos y operativos cu
 
 ## Preparacion para Hostinger
 
-La configuracion separa variables de entorno, aplicacion Next.js y base MySQL. Para Hostinger sera necesario configurar variables productivas, secretos reales, conexion MySQL administrada y proteccion de rutas antes de publicar.
+La configuracion separa variables de entorno, aplicacion Next.js y base MySQL. Para Hostinger sera necesario configurar variables productivas, un `AUTH_SECRET` real, credenciales administrativas robustas y la conexion MySQL administrada antes de publicar.
 
 ## Diagrama
 
@@ -63,5 +63,5 @@ flowchart TD
   Modules --> Email[Correo futuro]
   Modules --> Audit[Auditoria futura]
   AppRouter --> Prisma[Prisma datasource]
-  Prisma --> MySQL[(MySQL encuestashaq vacia)]
+  Prisma --> MySQL[(MySQL encuestashaq)]
 ```

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "survey-core/i18n/spanish";
 import "survey-core/survey-core.min.css";
 import { createDiagnosticSurvey } from "@/modules/surveys/create-diagnostic-survey";
@@ -41,6 +41,14 @@ const copy = {
     privacy: "Aviso de privacidad",
     optional: "Datos de contacto opcionales",
     progress: "Avance del cuestionario",
+    saving: "Estamos guardando sus respuestas...",
+    saved: "Su opinión es muy valiosa para Hospital Angeles Querétaro",
+    savedDetail:
+      "Gracias por compartir su experiencia. Sus comentarios nos ayudan a seguir mejorando la atención que brindamos cada día.",
+    saveError: "No pudimos guardar su encuesta",
+    saveErrorDetail:
+      "Revise su conexión e inténtelo nuevamente. Sus respuestas siguen aquí.",
+    retry: "Intentar de nuevo",
   },
   en: {
     title: "Your experience matters",
@@ -62,15 +70,51 @@ const copy = {
     privacy: "Privacy notice",
     optional: "Contact details are optional",
     progress: "Survey progress",
+    saving: "We are saving your answers...",
+    saved: "Your feedback is valuable to Hospital Angeles Querétaro",
+    savedDetail:
+      "Thank you for sharing your experience. Your comments help us improve the care we provide every day.",
+    saveError: "We could not save your survey",
+    saveErrorDetail:
+      "Check your connection and try again. Your answers are still here.",
+    retry: "Try again",
   },
 };
+
+type Submission = {
+  submissionId: string;
+  surveyCode: "servicios_externos_diagnostico";
+  locale: "es" | "en";
+  answers: Record<string, string | number | boolean | null>;
+};
+
+type SaveState = "idle" | "saving" | "saved" | "error";
 
 export default function DiagnosticSurvey() {
   const [language, setLanguage] = useState<"es" | "en">("es");
   const [survey] = useState(createDiagnosticSurvey);
   const [step, setStep] = useState(0);
   const [complete, setComplete] = useState(false);
+  const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [submission, setSubmission] = useState<Submission | null>(null);
   const text = copy[language];
+
+  const saveSubmission = useCallback(async (payload: Submission) => {
+    setSaveState("saving");
+
+    try {
+      const response = await fetch("/api/survey-responses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) throw new Error("Survey response was not saved");
+      setSaveState("saved");
+    } catch {
+      setSaveState("error");
+    }
+  }, []);
 
   useEffect(() => {
     const change = () => {
@@ -78,8 +122,16 @@ export default function DiagnosticSurvey() {
       window.scrollTo({ top: 0, behavior: "instant" });
     };
     const finish = () => {
+      const payload: Submission = {
+        submissionId: crypto.randomUUID(),
+        surveyCode: "servicios_externos_diagnostico",
+        locale: survey.locale === "en" ? "en" : "es",
+        answers: { ...survey.data },
+      };
+      setSubmission(payload);
       setComplete(true);
       window.scrollTo({ top: 0, behavior: "instant" });
+      void saveSubmission(payload);
     };
     survey.onCurrentPageChanged.add(change);
     survey.onComplete.add(finish);
@@ -87,7 +139,7 @@ export default function DiagnosticSurvey() {
       survey.onCurrentPageChanged.remove(change);
       survey.onComplete.remove(finish);
     };
-  }, [survey]);
+  }, [saveSubmission, survey]);
 
   return (
     <main className="diagnostic-survey" lang={language}>
@@ -150,7 +202,42 @@ export default function DiagnosticSurvey() {
             <p>{text.descriptions[step]}</p>
           </div>
         )}
-        <Survey model={survey} />
+        {!complete && <Survey model={survey} />}
+        {complete && (
+          <section
+            className={`submission-result submission-result--${saveState}`}
+            role="status"
+            aria-live="polite"
+          >
+            {saveState === "saving" && (
+              <>
+                <span className="saving-indicator" aria-hidden="true" />
+                <h2>{text.saving}</h2>
+              </>
+            )}
+            {saveState === "saved" && (
+              <>
+                <span className="success-mark" aria-hidden="true">
+                  ✓
+                </span>
+                <h2>{text.saved}</h2>
+                <p>{text.savedDetail}</p>
+              </>
+            )}
+            {saveState === "error" && (
+              <>
+                <h2>{text.saveError}</h2>
+                <p>{text.saveErrorDetail}</p>
+                <button
+                  type="button"
+                  onClick={() => submission && void saveSubmission(submission)}
+                >
+                  {text.retry}
+                </button>
+              </>
+            )}
+          </section>
+        )}
       </div>
       <footer className="survey-container survey-footer">
         <span>{text.optional}</span>
