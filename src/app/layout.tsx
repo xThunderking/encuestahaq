@@ -21,6 +21,9 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: "Encuestas HAQ",
   description: "Sistema de encuestas de satisfaccion hospitalaria",
+  icons: {
+    icon: "/logohaq1.png",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
