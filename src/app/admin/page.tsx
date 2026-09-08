@@ -1,4 +1,3 @@
-import type { Prisma } from "@prisma/client";
 import Image from "next/image";
 import Link from "next/link";
 import { cookies } from "next/headers";
@@ -30,13 +29,14 @@ const ratingNames: Record<string, string> = {
   poor: "Malo",
 };
 
-function asAnswers(value: Prisma.JsonValue) {
+function asAnswers(value: unknown) {
   return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, Prisma.JsonValue>)
+    ? (value as Record<string, unknown>)
     : {};
 }
 
-function formatDate(date: Date) {
+function formatDate(date: Date | null) {
+  if (!date) return "Pendiente";
   return new Intl.DateTimeFormat("es-MX", {
     dateStyle: "medium",
     timeStyle: "short",

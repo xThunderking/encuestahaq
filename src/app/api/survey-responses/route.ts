@@ -1,5 +1,5 @@
-import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/db/prisma";
+import { FieldValue } from "firebase-admin/firestore";
+import { adminDb } from "@/lib/firebase-admin";
 import { surveyResponseSchema } from "@/lib/validation/survey-response";
 
 export async function POST(request: Request) {
@@ -20,20 +20,32 @@ export async function POST(request: Request) {
   }
 
   try {
-    const response = await prisma.surveyResponse.upsert({
-      where: { submissionId: result.data.submissionId },
-      update: {},
-      create: {
-        submissionId: result.data.submissionId,
-        surveyCode: result.data.surveyCode,
-        locale: result.data.locale,
-        answers: result.data.answers as Prisma.InputJsonValue,
-      },
-      select: { id: true, submittedAt: true },
+    const { submissionId, surveyCode, locale, answers } = result.data;
+    const ref = adminDb.collection("surveyResponses").doc(submissionId);
+    await ref.create({
+      submissionId,
+      surveyCode,
+      locale,
+      answers,
+      submittedAt: FieldValue.serverTimestamp(),
     });
 
-    return Response.json(response, { status: 201 });
+    return Response.json(
+      { id: submissionId, submittedAt: new Date().toISOString() },
+      { status: 201 },
+    );
   } catch (error) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === 6
+    ) {
+      return Response.json(
+        { error: "La encuesta ya fue registrada." },
+        { status: 409 },
+      );
+    }
     console.error("Unable to save survey response", error);
     return Response.json(
       { error: "No fue posible guardar la encuesta." },
