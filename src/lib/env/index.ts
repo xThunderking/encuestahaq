@@ -4,6 +4,10 @@ const emptyStringToUndefined = (value: unknown) =>
   value === "" ? undefined : value;
 
 const envSchema = z.object({
+  FIREBASE_PROJECT_ID: z.preprocess(
+    emptyStringToUndefined,
+    z.string().min(1).optional(),
+  ),
   AUTH_SECRET: z.string().min(1),
   APP_URL: z.string().url(),
   PUBLIC_SURVEY_URL: z.string().url(),

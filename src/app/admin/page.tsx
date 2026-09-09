@@ -3,31 +3,20 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import AdminLogin from "@/components/admin/admin-login";
 import AdminLogout from "@/components/admin/admin-logout";
+import AdminDashboardCharts from "@/components/admin/admin-dashboard-charts";
+import ExportResultsButton from "@/components/admin/export-results-button";
 import {
   ADMIN_SESSION_COOKIE,
   verifyAdminSessionToken,
 } from "@/lib/security/admin-session";
-import { getAdminDashboardData } from "@/modules/responses/get-admin-dashboard-data";
+import {
+  getAdminDashboardData,
+  ratingNames,
+  serviceNames,
+} from "@/modules/responses/get-admin-dashboard-data";
 import styles from "./admin.module.css";
 
 const answerPrefix = "servicios_externos_diagnostico_pregunta_";
-const serviceNames: Record<string, string> = {
-  "0": "Banco de Sangre",
-  "1": "Check-up",
-  "2": "Colonoscopia/Endoscopia",
-  "3": "Hemodiálisis",
-  "4": "Hemodinamia",
-  "5": "Imagenología",
-  "6": "Laboratorio",
-  "7": "Urgencias",
-  "8": "Otro",
-};
-const ratingNames: Record<string, string> = {
-  excellent: "Excelente",
-  good: "Bueno",
-  fair: "Regular",
-  poor: "Malo",
-};
 
 function asAnswers(value: unknown) {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -48,10 +37,10 @@ export default async function AdminPage() {
   const token = (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
   if (!verifyAdminSessionToken(token)) return <AdminLogin />;
 
-  const { total, recentTotal, languageGroups, responses } =
+  const { total, recentTotal, analytics, responses } =
     await getAdminDashboardData();
   const spanishTotal =
-    languageGroups.find((item) => item.locale === "es")?._count._all ?? 0;
+    analytics.languages.find((item) => item.name === "Español")?.value ?? 0;
 
   return (
     <main className={styles.dashboard}>
@@ -77,6 +66,7 @@ export default async function AdminPage() {
             <h1>Panel de encuestas</h1>
             <p>Hospital Angeles Querétaro</p>
           </div>
+          <ExportResultsButton />
         </div>
         <section className={styles.metrics} aria-label="Resumen de respuestas">
           <article>
@@ -91,6 +81,21 @@ export default async function AdminPage() {
             <span>Encuestas en español</span>
             <strong>{spanishTotal}</strong>
           </article>
+          <article>
+            <span>NPS</span>
+            <strong>{analytics.nps ?? "—"}</strong>
+          </article>
+          <article>
+            <span>Promedio de recomendación</span>
+            <strong>
+              {analytics.averageRecommendation ?? "—"}
+              {analytics.averageRecommendation !== null && <small>/10</small>}
+            </strong>
+          </article>
+          <article>
+            <span>Aceptó compartir contacto</span>
+            <strong>{analytics.completionWithContact}%</strong>
+          </article>
         </section>
         <section className={styles.surveySummary}>
           <div>
@@ -100,6 +105,7 @@ export default async function AdminPage() {
           </div>
           <Link href="/">Abrir cuestionario</Link>
         </section>
+        <AdminDashboardCharts analytics={analytics} />
         <section className={styles.responsesSection}>
           <div className={styles.sectionHeading}>
             <div>
@@ -137,24 +143,24 @@ export default async function AdminPage() {
                     const customService = answers[`${answerPrefix}18`];
                     return (
                       <tr key={response.id}>
-                        <td>#{response.id}</td>
-                        <td>{formatDate(response.submittedAt)}</td>
-                        <td>
+                        <td data-label="Folio">#{response.id}</td>
+                        <td data-label="Fecha">{formatDate(response.submittedAt)}</td>
+                        <td data-label="Servicio">
                           {service === "8" && typeof customService === "string"
                             ? customService
                             : (serviceNames[service] ?? "Sin dato")}
                         </td>
-                        <td>
+                        <td data-label="Evaluación">
                           <span
                             className={`${styles.rating} ${styles[`rating_${rating}`] ?? ""}`}
                           >
                             {ratingNames[rating] ?? "Sin dato"}
                           </span>
                         </td>
-                        <td>
+                        <td data-label="Recomendación">
                           {String(answers[`${answerPrefix}14`] ?? "Sin dato")}
                         </td>
-                        <td>
+                        <td data-label="Idioma">
                           {response.locale === "en" ? "Inglés" : "Español"}
                         </td>
                       </tr>
