@@ -1,5 +1,6 @@
 import "server-only";
 
+import { readFile } from "node:fs/promises";
 import ExcelJS from "exceljs";
 import sharp from "sharp";
 import type {
@@ -15,6 +16,14 @@ import {
 
 const answerPrefix = "servicios_externos_diagnostico_pregunta_";
 const chartColors = ["#0063a6", "#17a6a1", "#7957a8", "#16805a"];
+const chartFontFamily = "HAQChartFont";
+
+// Sharp renders the SVG on the server, where system fonts such as Arial are
+// not guaranteed to exist. Embed a font that ships with Next so that chart
+// labels are rasterized as text, rather than replacement-glyph boxes.
+const chartFontBase64 = readFile(
+  require.resolve("next/dist/compiled/@vercel/og/Geist-Regular.ttf"),
+).then((font) => font.toString("base64"));
 
 const questionLabels: Record<string, string> = {
   "1": "Motivo de elección",
@@ -62,6 +71,7 @@ async function renderBarChart(
   data: ChartDatum[],
   color: string,
 ) {
+  const fontBase64 = await chartFontBase64;
   const rows = Math.max(data.length, 1);
   const width = 900;
   const height = 95 + rows * 38;
@@ -81,10 +91,16 @@ async function renderBarChart(
         .join("")
     : `<text x="18" y="100" font-size="16" fill="#61737a">Sin datos disponibles</text>`;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+    <style>
+      @font-face {
+        font-family: '${chartFontFamily}';
+        src: url('data:font/ttf;base64,${fontBase64}') format('truetype');
+      }
+    </style>
     <rect width="100%" height="100%" rx="12" fill="#ffffff" />
     <rect x="0.5" y="0.5" width="${width - 1}" height="${height - 1}" rx="12" fill="none" stroke="#dce5e7" />
-    <text x="18" y="37" font-family="Arial" font-size="22" font-weight="700" fill="#173f4a">${escapeXml(title)}</text>
-    <g font-family="Arial">${bars}</g>
+    <text x="18" y="37" font-family="${chartFontFamily}" font-size="22" font-weight="700" fill="#173f4a">${escapeXml(title)}</text>
+    <g font-family="${chartFontFamily}">${bars}</g>
   </svg>`;
   return {
     buffer: await sharp(Buffer.from(svg)).png().toBuffer(),
