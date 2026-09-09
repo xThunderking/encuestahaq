@@ -1,6 +1,7 @@
 import "server-only";
 
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import ExcelJS from "exceljs";
 import sharp from "sharp";
 import type {
@@ -22,7 +23,16 @@ const chartFontFamily = "HAQChartFont";
 // not guaranteed to exist. Embed a font that ships with Next so that chart
 // labels are rasterized as text, rather than replacement-glyph boxes.
 const chartFontBase64 = readFile(
-  require.resolve("next/dist/compiled/@vercel/og/Geist-Regular.ttf"),
+  join(
+    process.cwd(),
+    "node_modules",
+    "next",
+    "dist",
+    "compiled",
+    "@vercel",
+    "og",
+    "Geist-Regular.ttf",
+  ),
 ).then((font) => font.toString("base64"));
 
 const questionLabels: Record<string, string> = {
