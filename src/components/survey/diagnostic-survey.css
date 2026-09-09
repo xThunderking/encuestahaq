@@ -148,6 +148,9 @@
   padding: 0;
   min-width: 0;
 }
+.diagnostic-survey .sd-page {
+  row-gap: 20px;
+}
 .diagnostic-survey .sv-components-row,
 .diagnostic-survey .sv-components-column,
 .diagnostic-survey .sd-row,
@@ -498,6 +501,9 @@
   .diagnostic-survey .sd-question {
     padding-block: 22px;
   }
+  .diagnostic-survey .sd-page {
+    row-gap: 12px;
+  }
   .diagnostic-survey .sd-selectbase--multi-column {
     gap: 10px;
   }
@@ -590,6 +596,9 @@
   .diagnostic-survey .sd-question {
     padding-block: 18px;
   }
+  .diagnostic-survey .sd-page {
+    row-gap: 0;
+  }
   .diagnostic-survey .sd-title.sd-element__title {
     font-size: 18px;
     line-height: 1.45;
@@ -610,20 +619,68 @@
   }
   .diagnostic-survey .sd-rating fieldset {
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
+    width: 100%;
+  }
+  .diagnostic-survey .sd-rating {
+    width: 100% !important;
+    max-width: 100%;
   }
   .diagnostic-survey .sd-rating__item {
-    width: 100%;
-    min-width: 0;
-    min-height: 48px;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    min-height: 52px;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .diagnostic-survey .sd-rating__item-text {
+    font-size: 17px;
+    font-weight: 600;
   }
   .diagnostic-survey .sd-input {
-    min-height: 52px;
+    min-height: 48px;
     font-size: 16px;
+    padding: 10px 12px;
   }
   .diagnostic-survey textarea.sd-input {
-    min-height: 130px;
+    min-height: 120px;
+  }
+  .diagnostic-survey .sd-question:has(.sd-input:not(textarea)) {
+    padding-block: 8px;
+  }
+  .diagnostic-survey
+    .sd-question:has(.sd-input:not(textarea))
+    .sd-title.sd-element__title {
+    font-size: 16px;
+    line-height: 1.35;
+  }
+  .diagnostic-survey
+    .sd-question:has(.sd-input:not(textarea))
+    .sd-question__header-and-content-container {
+    row-gap: 6px;
+  }
+  .diagnostic-survey
+    .sd-question:has(.sd-input:not(textarea))
+    .sd-question__header {
+    padding-block: 0;
+  }
+  .diagnostic-survey
+    .sd-question:has(
+      input[name^="servicios_externos_diagnostico_pregunta_32"]
+    )
+    .sd-selectbase {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .diagnostic-survey
+    .sd-question:has(
+      input[name^="servicios_externos_diagnostico_pregunta_32"]
+    )
+    .sd-selectbase__label {
+    min-height: 48px;
   }
   .submission-result--saved {
     min-height: 560px;
@@ -631,15 +688,34 @@
     background-position: 58% center;
   }
   .diagnostic-survey .sd-body__navigation {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
     width: 100%;
+    max-width: 100%;
+    gap: 10px;
     padding-block: 22px;
+    overflow: visible;
   }
-  .diagnostic-survey .sd-navigation__next-btn,
-  .diagnostic-survey .sd-navigation__complete-btn {
-    flex: 1 1 150px;
+  .diagnostic-survey .sd-body__navigation .sd-action {
+    width: 100%;
+    min-width: 0;
+    min-height: 52px;
+    margin: 0;
+    padding: 10px 12px;
+    font-size: 16px;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: visible;
   }
-  .diagnostic-survey .sd-navigation__prev-btn {
-    flex: 0 1 130px;
+  .diagnostic-survey .sd-body__navigation .sd-action:only-child,
+  .diagnostic-survey
+    .sd-body__navigation
+    .sd-navigation__next-btn:first-child:last-child,
+  .diagnostic-survey
+    .sd-body__navigation
+    .sd-navigation__complete-btn:first-child:last-child {
+    grid-column: 1 / -1;
   }
 }
 @media (max-width: 374px) {
@@ -680,14 +756,13 @@
     padding-block: 16px;
   }
   .diagnostic-survey .sd-body__navigation {
-    flex-wrap: wrap;
+    grid-template-columns: minmax(0, 1fr);
   }
   .diagnostic-survey .sd-action {
-    flex: 1 1 100%;
     width: 100%;
   }
   .diagnostic-survey .sd-rating fieldset {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 6px;
   }
 }

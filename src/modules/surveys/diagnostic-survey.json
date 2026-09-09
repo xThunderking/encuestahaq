@@ -12,14 +12,14 @@
           },
           "choices": [
             {
-              "value": "1",
+              "value": 1,
               "text": {
                 "default": "Si",
                 "en": "Yes"
               }
             },
             {
-              "value": "0",
+              "value": 0,
               "text": "No"
             }
           ]
