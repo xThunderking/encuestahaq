@@ -161,6 +161,12 @@
   align-items: flex-end;
   gap: 7px;
 }
+.exportButtons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
 .exportControl > span {
   max-width: 300px;
   color: #a72231;
@@ -186,6 +192,13 @@
 .exportButton:hover {
   background: #004f85;
   transform: translateY(-1px);
+}
+.exportPdfButton {
+  background: #7c5aa6;
+  box-shadow: 0 8px 20px rgba(124, 90, 166, 0.2);
+}
+.exportPdfButton:hover {
+  background: #654685;
 }
 .exportButton:disabled {
   cursor: wait;
@@ -538,8 +551,12 @@
     margin-bottom: 22px;
   }
   .exportControl,
+  .exportButtons,
   .exportButton {
     width: 100%;
+  }
+  .exportButtons {
+    flex-direction: column;
   }
   .exportControl {
     align-items: stretch;

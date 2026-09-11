@@ -1,9 +1,6 @@
 import "server-only";
 
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import ExcelJS from "exceljs";
-import sharp from "sharp";
 import type {
   ChartDatum,
   DashboardAnalytics,
@@ -17,24 +14,6 @@ import {
 
 const answerPrefix = "servicios_externos_diagnostico_pregunta_";
 const chartColors = ["#0063a6", "#17a6a1", "#7957a8", "#16805a"];
-const chartFontFamily = "HAQChartFont";
-
-// Sharp renders the SVG on the server, where system fonts such as Arial are
-// not guaranteed to exist. Embed a font that ships with Next so that chart
-// labels are rasterized as text, rather than replacement-glyph boxes.
-const chartFontBase64 = readFile(
-  join(
-    process.cwd(),
-    "node_modules",
-    "next",
-    "dist",
-    "compiled",
-    "@vercel",
-    "og",
-    "Geist-Regular.ttf",
-  ),
-).then((font) => font.toString("base64"));
-
 const questionLabels: Record<string, string> = {
   "1": "Motivo de elección",
   "2": "Otro motivo",
@@ -64,6 +43,8 @@ const questionLabels: Record<string, string> = {
   "32": "Acepta compartir contacto",
 };
 
+/* Legacy SVG chart renderer. Text is now rendered by Excel itself. */
+/*
 function escapeXml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -117,6 +98,66 @@ async function renderBarChart(
     width,
     height,
   };
+}
+
+*/
+function addNativeBarChart(
+  worksheet: ExcelJS.Worksheet,
+  title: string,
+  data: ChartDatum[],
+  color: string,
+  startRow: number,
+) {
+  const max = Math.max(...data.map((item) => item.value), 1);
+
+  worksheet.mergeCells(startRow, 1, startRow, 14);
+  const titleCell = worksheet.getCell(startRow, 1);
+  titleCell.value = title;
+  titleCell.font = { size: 15, bold: true, color: { argb: "FF173F4A" } };
+  titleCell.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFF4F8F9" },
+  };
+  titleCell.alignment = { vertical: "middle" };
+  worksheet.getRow(startRow).height = 28;
+
+  if (!data.length) {
+    worksheet.mergeCells(startRow + 1, 1, startRow + 1, 14);
+    const emptyCell = worksheet.getCell(startRow + 1, 1);
+    emptyCell.value = "Sin datos disponibles";
+    emptyCell.font = { italic: true, color: { argb: "FF61737A" } };
+    return startRow + 4;
+  }
+
+  data.forEach((item, index) => {
+    const row = startRow + index + 1;
+    worksheet.mergeCells(row, 1, row, 4);
+    const labelCell = worksheet.getCell(row, 1);
+    labelCell.value = item.name;
+    labelCell.font = { color: { argb: "FF29434C" } };
+    labelCell.alignment = { vertical: "middle", wrapText: true };
+
+    const filledColumns =
+      item.value > 0 ? Math.max(1, Math.round((item.value / max) * 8)) : 0;
+    if (filledColumns) {
+      worksheet.mergeCells(row, 5, row, 4 + filledColumns);
+      worksheet.getCell(row, 5).fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: `FF${color.slice(1).toUpperCase()}` },
+      };
+    }
+
+    worksheet.mergeCells(row, 13, row, 14);
+    const valueCell = worksheet.getCell(row, 13);
+    valueCell.value = item.value;
+    valueCell.font = { bold: true, color: { argb: "FF29434C" } };
+    valueCell.alignment = { vertical: "middle", horizontal: "left" };
+    worksheet.getRow(row).height = 26;
+  });
+
+  return startRow + data.length + 3;
 }
 
 function styleHeader(row: ExcelJS.Row) {
@@ -225,22 +266,15 @@ export async function createSurveyExcel(
     ["Idioma de respuesta", analytics.languages],
     ["Consentimiento para contacto", analytics.contactConsent],
   ];
-  let imageRow = 8;
+  let chartRow = 8;
   for (const [index, [chartTitle, data]] of chartGroups.entries()) {
-    const chart = await renderBarChart(
+    chartRow = addNativeBarChart(
+      summary,
       chartTitle,
       data,
       chartColors[index % chartColors.length],
+      chartRow,
     );
-    const imageId = workbook.addImage({
-      base64: chart.buffer.toString("base64"),
-      extension: "png",
-    });
-    summary.addImage(imageId, {
-      tl: { col: 0, row: imageRow },
-      ext: { width: chart.width, height: chart.height },
-    });
-    imageRow += Math.ceil(chart.height / 20) + 2;
   }
 
   const details = workbook.addWorksheet("Todas las respuestas", {
