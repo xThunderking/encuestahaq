@@ -32,6 +32,9 @@
             "en": "Email"
           },
           "visibleIf": "{servicios_externos_diagnostico_pregunta_32} = 1",
+          "isRequired": true,
+          "inputType": "email",
+          "autocomplete": "email",
           "validators": [
             {
               "type": "email",
@@ -50,6 +53,10 @@
             "en": "Phone"
           },
           "visibleIf": "{servicios_externos_diagnostico_pregunta_32} = 1",
+          "isRequired": true,
+          "inputType": "tel",
+          "autocomplete": "tel",
+          "maxLength": 15,
           "validators": [
             {
               "type": "regex",
@@ -68,7 +75,19 @@
             "default": "Nombre y Apellido",
             "en": "First and Last Name"
           },
-          "visibleIf": "{servicios_externos_diagnostico_pregunta_32} = 1"
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_32} = 1",
+          "isRequired": true,
+          "autocomplete": "name",
+          "validators": [
+            {
+              "type": "regex",
+              "text": {
+                "default": "Ingrese únicamente letras, espacios y signos de nombre.",
+                "en": "Use letters, spaces, and name punctuation only."
+              },
+              "regex": "^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ'’.-]+(?:\\s+[A-Za-zÁÉÍÓÚÜÑáéíóúüñ'’.-]+)*$"
+            }
+          ]
         },
         {
           "type": "html",

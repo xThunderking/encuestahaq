@@ -135,9 +135,24 @@ export default function DiagnosticSurvey() {
     };
     survey.onCurrentPageChanged.add(change);
     survey.onComplete.add(finish);
+    const sanitizeContactValue = (
+      _sender: unknown,
+      options: { name: string; value: unknown },
+    ) => {
+      const value = options.value;
+      if (typeof value !== "string") return;
+      if (options.name.endsWith("_pregunta_31")) {
+        options.value = value.replace(/\D/g, "").slice(0, 15);
+      }
+      if (options.name.endsWith("_pregunta_29")) {
+        options.value = value.replace(/[0-9]/g, "");
+      }
+    };
+    survey.onValueChanging.add(sanitizeContactValue);
     return () => {
       survey.onCurrentPageChanged.remove(change);
       survey.onComplete.remove(finish);
+      survey.onValueChanging.remove(sanitizeContactValue);
     };
   }, [saveSubmission, survey]);
 

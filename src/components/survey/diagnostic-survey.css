@@ -340,6 +340,37 @@
   width: 100%;
   max-width: 100%;
 }
+.diagnostic-survey
+  .sd-question:has(input[name^="servicios_externos_diagnostico_pregunta_32"]),
+.diagnostic-survey
+  .sd-question:has(input[name^="servicios_externos_diagnostico_pregunta_29"]),
+.diagnostic-survey
+  .sd-question:has(input[name^="servicios_externos_diagnostico_pregunta_30"]),
+.diagnostic-survey
+  .sd-question:has(input[name^="servicios_externos_diagnostico_pregunta_31"]) {
+  padding: 22px;
+  border: 1px solid #d8e7ec;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f5fbfc, #eef6f8);
+}
+.diagnostic-survey
+  .sd-question:has(input[name^="servicios_externos_diagnostico_pregunta_32"]) {
+  margin-top: 8px;
+  border-color: #bfd7e2;
+  background: #edf7fb;
+}
+.diagnostic-survey
+  .sd-question:has(input[name^="servicios_externos_diagnostico_pregunta_29"])
+  .sd-input,
+.diagnostic-survey
+  .sd-question:has(input[name^="servicios_externos_diagnostico_pregunta_30"])
+  .sd-input,
+.diagnostic-survey
+  .sd-question:has(input[name^="servicios_externos_diagnostico_pregunta_31"])
+  .sd-input {
+  border-color: #a7c4cf;
+  background: #fff;
+}
 .diagnostic-survey textarea.sd-input {
   min-height: 150px;
 }
@@ -667,18 +698,14 @@
     padding-block: 0;
   }
   .diagnostic-survey
-    .sd-question:has(
-      input[name^="servicios_externos_diagnostico_pregunta_32"]
-    )
+    .sd-question:has(input[name^="servicios_externos_diagnostico_pregunta_32"])
     .sd-selectbase {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
   }
   .diagnostic-survey
-    .sd-question:has(
-      input[name^="servicios_externos_diagnostico_pregunta_32"]
-    )
+    .sd-question:has(input[name^="servicios_externos_diagnostico_pregunta_32"])
     .sd-selectbase__label {
     min-height: 48px;
   }
