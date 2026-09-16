@@ -1,0 +1,37 @@
+[debug] [2026-09-16T21:23:05.895Z] ----------------------------------------------------------------------
+[debug] [2026-09-16T21:23:05.897Z] Command:       C:\Users\QRSIS05\AppData\Local\Author Software\nvm\installs\v22.23.2\node.exe C:\Users\QRSIS05\AppData\Local\npm-cache\_npx\ba4f1959e38407b5\node_modules\firebase-tools\lib\bin\firebase.js firestore:databases:list
+[debug] [2026-09-16T21:23:05.897Z] CLI Version:   15.30.1
+[debug] [2026-09-16T21:23:05.897Z] Platform:      win32
+[debug] [2026-09-16T21:23:05.897Z] Node Version:  v22.23.2
+[debug] [2026-09-16T21:23:05.898Z] Detected Agent: codex_cli
+[debug] [2026-09-16T21:23:05.898Z] Time:          Wed Sep 16 2026 15:23:05 GMT-0600 (hora estándar central)
+[debug] [2026-09-16T21:23:05.898Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-09-16T21:23:05.906Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2026-09-16T21:23:06.977Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-09-16T21:23:06.977Z] > authorizing via signed-in user (ignacioreynarayo25@gmail.com)
+[debug] [2026-09-16T21:23:06.977Z] [iam] checking project encuestashaq for permissions ["datastore.databases.list","firebase.projects.get"]
+[debug] [2026-09-16T21:23:06.978Z] Checked if tokens are valid: false, expires at: 1788906802726
+[debug] [2026-09-16T21:23:06.978Z] Checked if tokens are valid: false, expires at: 1788906802726
+[debug] [2026-09-16T21:23:06.978Z] > refreshing access token with scopes: []
+[debug] [2026-09-16T21:23:06.979Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-09-16T21:23:06.979Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-09-16T21:23:07.235Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2026-09-16T21:23:07.236Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
+[debug] [2026-09-16T21:23:07.374Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-09-16T21:23:07.374Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-09-16T21:23:07.380Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/encuestashaq:testIamPermissions [none]
+[debug] [2026-09-16T21:23:07.380Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/encuestashaq:testIamPermissions  x-goog-user-project=encuestashaq
+[debug] [2026-09-16T21:23:07.380Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/encuestashaq:testIamPermissions {"permissions":["datastore.databases.list","firebase.projects.get"]}
+[debug] [2026-09-16T21:23:07.913Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/encuestashaq:testIamPermissions 200
+[debug] [2026-09-16T21:23:07.913Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/encuestashaq:testIamPermissions {"permissions":["datastore.databases.list","firebase.projects.get"]}
+[debug] [2026-09-16T21:23:07.914Z] Checked if tokens are valid: true, expires at: 1789597386374
+[debug] [2026-09-16T21:23:07.914Z] Checked if tokens are valid: true, expires at: 1789597386374
+[debug] [2026-09-16T21:23:07.914Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/encuestashaq/databases [none]
+[debug] [2026-09-16T21:23:08.624Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/encuestashaq/databases 200
+[debug] [2026-09-16T21:23:08.624Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/encuestashaq/databases {"databases":[{"name":"projects/encuestashaq/databases/(default)","uid":"72b7f6cf-e398-492a-9d63-82f36fb8cb9d","createTime":"2026-09-08T21:47:44.870552Z","updateTime":"2026-09-08T21:47:44.870552Z","locationId":"northamerica-south1","type":"FIRESTORE_NATIVE","concurrencyMode":"PESSIMISTIC","versionRetentionPeriod":"3600s","earliestVersionTime":"2026-09-16T20:23:08.609982Z","appEngineIntegrationMode":"DISABLED","pointInTimeRecoveryEnablement":"POINT_IN_TIME_RECOVERY_DISABLED","deleteProtectionState":"DELETE_PROTECTION_DISABLED","databaseEdition":"STANDARD","freeTier":true,"realtimeUpdatesMode":"REALTIME_UPDATES_MODE_ENABLED","enhancedTextSearchQueryMode":"ENHANCED_QUERY_MODE_ENABLED","etag":"II6AsLCE9JYDMLXknsSg4JYD"}]}
+[info] ┌──────────────────────────────────────────────┬────────────────────┬────────────────────┐
+│ Database Name                                │ Edition            │ Type               │
+├──────────────────────────────────────────────┼────────────────────┼────────────────────┤
+│ projects/encuestashaq/databases/(default)    │ STANDARD           │ FIRESTORE_NATIVE   │
+└──────────────────────────────────────────────┴────────────────────┴────────────────────┘

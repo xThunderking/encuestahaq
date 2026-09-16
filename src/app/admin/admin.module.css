@@ -146,6 +146,24 @@
   align-items: center;
   gap: 14px;
 }
+.adminNav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.adminNav a {
+  padding: 10px 12px;
+  border-radius: 7px;
+  color: #29434c;
+  font-size: 14px;
+  font-weight: 650;
+  text-decoration: none;
+}
+.adminNav a:hover,
+.adminNav a.navActive {
+  background: #e5f1f5;
+  color: #005b98;
+}
 .headerActions a,
 .surveySummary > a {
   color: #005b98;
@@ -189,6 +207,34 @@
   font-size: 12px;
   text-align: right;
 }
+.clearSurveysControl {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 7px;
+}
+.clearSurveysControl > span {
+  color: #a72231;
+  font-size: 12px;
+}
+.clearSurveysButton {
+  min-height: 50px;
+  padding: 11px 20px;
+  border: 1px solid #b22c3c;
+  border-radius: 10px;
+  background: #fff;
+  color: #a72231;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.clearSurveysButton:hover {
+  background: #fff1f2;
+}
+.clearSurveysButton:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
 .exportButton {
   display: inline-flex;
   align-items: center;
@@ -229,6 +275,95 @@
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2;
+}
+.exportModalBackdrop {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(23, 63, 74, 0.48);
+}
+.exportModal {
+  width: min(100%, 390px);
+  padding: 28px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.22);
+}
+.exportModal h2 {
+  margin: 0;
+  color: #173f4a;
+  font-size: 21px;
+}
+.exportModal p {
+  margin: 8px 0 20px;
+  color: #607178;
+  font-size: 14px;
+}
+.exportModal label {
+  display: block;
+  margin-bottom: 7px;
+  color: #29434c;
+  font-weight: 700;
+}
+.exportModal input {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid #a9bcc2;
+  border-radius: 7px;
+  color: #20363e;
+  font: inherit;
+}
+.exportModal small {
+  display: block;
+  margin-top: 7px;
+  color: #607178;
+}
+.exportMonthList {
+  display: grid;
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid #dce5e7;
+  border-radius: 8px;
+}
+.exportMonthOption {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  margin: 0 !important;
+  padding: 9px 12px;
+  border-bottom: 1px solid #edf3f5;
+  font-weight: 500 !important;
+  text-transform: capitalize;
+}
+.exportMonthOption:last-child {
+  border-bottom: 0;
+}
+.exportMonthOption input {
+  width: 17px;
+  min-height: 17px;
+  margin: 0;
+}
+.exportModalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+.exportCancelButton {
+  min-height: 50px;
+  padding: 11px 20px;
+  border: 1px solid #cbd8dc;
+  border-radius: 10px;
+  background: #fff;
+  color: #29434c;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
 }
 .titleRow > div > p:last-child {
   margin: 8px 0 0;

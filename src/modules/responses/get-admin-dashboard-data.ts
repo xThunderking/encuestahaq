@@ -163,9 +163,7 @@ export function buildDashboardAnalytics(
 
   for (const response of responses) {
     const service = String(answer(response, "3") ?? "");
-    const rating = String(
-      answer(response, service === "1" ? "28" : "6") ?? "",
-    );
+    const rating = String(answer(response, service === "1" ? "28" : "6") ?? "");
     if (ratingNames[rating]) {
       const label = ratingNames[rating];
       satisfactionCounts.set(label, (satisfactionCounts.get(label) ?? 0) + 1);
@@ -188,8 +186,7 @@ export function buildDashboardAnalytics(
     .map(([question, name]) => {
       const scores = responses
         .map(
-          (response) =>
-            ratingScores[String(answer(response, question) ?? "")],
+          (response) => ratingScores[String(answer(response, question) ?? "")],
         )
         .filter((score): score is number => Number.isFinite(score));
       return {
@@ -256,6 +253,26 @@ export async function getAllSurveyResponses() {
       (a, b) =>
         (b.submittedAt?.getTime() ?? 0) - (a.submittedAt?.getTime() ?? 0),
     );
+}
+
+export function filterResponsesByMonths(
+  responses: DashboardResponse[],
+  months: string[],
+) {
+  if (!months.length) return responses;
+
+  const monthFormatter = new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    timeZone: "America/Mexico_City",
+  });
+
+  const selectedMonths = new Set(months);
+  return responses.filter((response) =>
+    response.submittedAt
+      ? selectedMonths.has(monthFormatter.format(response.submittedAt))
+      : false,
+  );
 }
 
 export async function getAdminDashboardData() {
