@@ -79,6 +79,18 @@
   margin-top: 14px;
   width: 100%;
 }
+.changeEmailButton {
+  min-height: auto !important;
+  margin-top: 0 !important;
+  padding: 2px 0 !important;
+  width: auto !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #0063a6 !important;
+  font-weight: 600 !important;
+  text-align: left;
+  text-decoration: underline;
+}
 .loginForm button:disabled,
 .logoutButton:disabled {
   cursor: wait;
@@ -99,7 +111,11 @@
 .dashboard {
   min-height: 100vh;
   background:
-    radial-gradient(circle at 90% 0%, rgba(0, 99, 166, 0.08), transparent 28rem),
+    radial-gradient(
+      circle at 90% 0%,
+      rgba(0, 99, 166, 0.08),
+      transparent 28rem
+    ),
     #f4f7f8;
   color: #20363e;
   font-family: var(--font-poppins), Arial, sans-serif;

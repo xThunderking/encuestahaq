@@ -48,7 +48,7 @@ El modulo futuro de auditoria registrara eventos administrativos y operativos cu
 
 ## Preparacion para Hostinger
 
-La configuracion separa variables de entorno, aplicacion Next.js y base MySQL. Para Hostinger sera necesario configurar variables productivas, un `AUTH_SECRET` real, credenciales administrativas robustas y la conexion MySQL administrada antes de publicar.
+La configuracion separa variables de entorno, aplicacion Next.js y base MySQL. Para Hostinger sera necesario configurar variables productivas, un `AUTH_SECRET` real, SMTP, Firebase Authentication con Google y la conexion MySQL administrada antes de publicar.
 
 ## Diagrama
 

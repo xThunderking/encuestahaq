@@ -92,8 +92,10 @@ http://localhost:3000
 
 - `/`: cuestionario de satisfaccion.
 - `/encuesta/[token]`: marcador provisional del modulo de encuestas.
-- `/admin`: acceso administrativo y panel de encuestas. En desarrollo usa
-  `Admin` como usuario y contraseña.
+- `/admin`: acceso administrativo y panel de encuestas mediante Google y un
+  código de seis dígitos enviado al correo de la cuenta Google seleccionada.
+  Todo correo de Google que complete ambas verificaciones obtiene acceso
+  administrativo.
 - `/admin/login`: redirige al acceso administrativo en `/admin`.
 - `/api/health`: estado basico de la aplicacion, sin consultar la base de datos.
 - `/api/survey-responses`: guarda las encuestas completadas.
@@ -141,7 +143,7 @@ docs/
 
 ## Proximos pasos
 
-- Sustituir las credenciales administrativas de desarrollo antes de publicar.
+- Configurar SMTP y habilitar Google como proveedor en Firebase Authentication.
 - Construir reportes y exportaciones.
 - Configurar envio de correos.
 - Agregar auditoria.

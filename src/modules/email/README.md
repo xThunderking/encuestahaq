@@ -1,3 +1,4 @@
 # Email
 
-Preparara el envio futuro de correos mediante Nodemailer.
+`send-admin-login-code.ts` entrega por SMTP el código temporal usado para el
+acceso administrativo.

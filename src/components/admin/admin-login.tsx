@@ -2,39 +2,108 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import {
+  GoogleAuthProvider,
+  getAuth,
+  signInWithPopup,
+  signOut,
+} from "firebase/auth";
 import { FormEvent, useState } from "react";
 import styles from "@/app/admin/admin.module.css";
+import { firebaseApp } from "@/lib/firebase/client";
+
+type LoginResponse = {
+  authenticated?: boolean;
+  codeSent?: boolean;
+  error?: string;
+};
 
 export default function AdminLogin() {
   const router = useRouter();
+  const [code, setCode] = useState("");
+  const [codeRequested, setCodeRequested] = useState(false);
+  const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function sendRequest(body: unknown) {
+    const response = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = (await response.json()) as LoginResponse;
+    return { data, response };
+  }
+
+  async function handleGoogleSignIn() {
+    setError("");
+    setLoading(true);
+
+    try {
+      const auth = getAuth(firebaseApp);
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+      const result = await signInWithPopup(auth, provider);
+      const idToken = await result.user.getIdToken();
+      const { data, response } = await sendRequest({
+        action: "request-code",
+        idToken,
+      });
+      if (!response.ok || !data.codeSent || !result.user.email) {
+        await signOut(auth);
+        setError(data.error ?? "No fue posible enviar el código.");
+        return;
+      }
+      setEmail(result.user.email);
+      setCodeRequested(true);
+    } catch {
+      setError(
+        "No fue posible iniciar sesión con Google. Inténtelo nuevamente.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleCodeVerification(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setLoading(true);
-    const form = new FormData(event.currentTarget);
 
     try {
-      const response = await fetch("/api/admin/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: form.get("username"),
-          password: form.get("password"),
-        }),
+      const auth = getAuth(firebaseApp);
+      const user = auth.currentUser;
+      if (!user) {
+        setError(
+          "La sesión de Google ya no está disponible. Vuelva a iniciar sesión.",
+        );
+        return;
+      }
+
+      const { data, response } = await sendRequest({
+        action: "verify-code",
+        code,
+        idToken: await user.getIdToken(),
       });
-      if (!response.ok) {
-        setError("Usuario o contraseña incorrectos.");
+      if (!response.ok || !data.authenticated) {
+        setError(data.error ?? "No fue posible validar el código.");
         return;
       }
       router.refresh();
     } catch {
-      setError("No fue posible iniciar sesión. Inténtelo nuevamente.");
+      setError("No fue posible completar la solicitud. Inténtelo nuevamente.");
     } finally {
       setLoading(false);
     }
+  }
+
+  async function changeGoogleAccount() {
+    setCode("");
+    setCodeRequested(false);
+    setEmail("");
+    setError("");
+    await signOut(getAuth(firebaseApp));
   }
 
   return (
@@ -52,36 +121,62 @@ export default function AdminLogin() {
           <p className={styles.eyebrow}>Administración</p>
           <h1>Panel de encuestas</h1>
           <p className={styles.loginIntro}>
-            Ingrese sus credenciales para consultar las encuestas contestadas.
+            {codeRequested
+              ? `Ingrese el código de seis dígitos enviado a ${email}.`
+              : "Inicie sesión con Google para recibir un código de acceso."}
           </p>
         </div>
-        <form onSubmit={handleSubmit} className={styles.loginForm}>
-          <label htmlFor="username">Usuario</label>
-          <input
-            id="username"
-            name="username"
-            type="text"
-            autoComplete="username"
-            required
-            autoFocus
-          />
-          <label htmlFor="password">Contraseña</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-          />
-          {error && (
-            <p className={styles.formError} role="alert">
-              {error}
-            </p>
-          )}
-          <button type="submit" disabled={loading}>
-            {loading ? "Ingresando..." : "Ingresar"}
-          </button>
-        </form>
+        {!codeRequested ? (
+          <div className={styles.loginForm}>
+            {error && (
+              <p className={styles.formError} role="alert">
+                {error}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+            >
+              {loading ? "Conectando..." : "Continuar con Google"}
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleCodeVerification} className={styles.loginForm}>
+            <label htmlFor="code">Código de verificación</label>
+            <input
+              id="code"
+              name="code"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]{6}"
+              maxLength={6}
+              value={code}
+              onChange={(event) =>
+                setCode(event.target.value.replace(/\D/g, ""))
+              }
+              required
+              autoFocus
+            />
+            <button
+              className={styles.changeEmailButton}
+              type="button"
+              onClick={changeGoogleAccount}
+              disabled={loading}
+            >
+              Usar otra cuenta de Google
+            </button>
+            {error && (
+              <p className={styles.formError} role="alert">
+                {error}
+              </p>
+            )}
+            <button type="submit" disabled={loading}>
+              {loading ? "Verificando..." : "Verificar código"}
+            </button>
+          </form>
+        )}
       </section>
     </main>
   );
