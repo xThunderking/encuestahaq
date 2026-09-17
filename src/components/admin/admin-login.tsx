@@ -6,7 +6,6 @@ import {
   GoogleAuthProvider,
   getAuth,
   getRedirectResult,
-  signInWithRedirect,
   signInWithPopup,
   signOut,
 } from "firebase/auth";
@@ -87,13 +86,6 @@ export default function AdminLogin() {
       const auth = getAuth(firebaseApp);
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
-      const shouldUseRedirect = window.matchMedia(
-        "(max-width: 768px), (pointer: coarse)",
-      ).matches;
-      if (shouldUseRedirect) {
-        await signInWithRedirect(auth, provider);
-        return;
-      }
       const result = await signInWithPopup(auth, provider);
       const idToken = await result.user.getIdToken();
       const { data, response } = await sendRequest({
