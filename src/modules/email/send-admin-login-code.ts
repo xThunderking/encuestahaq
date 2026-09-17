@@ -19,6 +19,9 @@ function getMailTransport() {
       user: env.SMTP_USER,
       pass: env.SMTP_PASSWORD,
     },
+    tls: {
+      rejectUnauthorized: env.SMTP_TLS_REJECT_UNAUTHORIZED,
+    },
   });
 }
 

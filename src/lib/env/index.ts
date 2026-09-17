@@ -12,12 +12,28 @@ const envSchema = z.object({
   APP_URL: z.string().url(),
   PUBLIC_SURVEY_URL: z.string().url(),
   ADMIN_URL: z.string().url(),
+  ADMIN_ALLOWED_EMAILS: z
+    .string()
+    .min(1)
+    .default("reynarayonacho850@gmail.com")
+    .transform((value) =>
+      value
+        .split(",")
+        .map((email) => email.trim().toLowerCase())
+        .filter(Boolean),
+    ),
   SMTP_HOST: z.preprocess(emptyStringToUndefined, z.string().optional()),
   SMTP_PORT: z.coerce.number().int().positive().default(587),
   SMTP_SECURE: z
     .preprocess(
       emptyStringToUndefined,
       z.enum(["true", "false"]).default("false"),
+    )
+    .transform((value) => value === "true"),
+  SMTP_TLS_REJECT_UNAUTHORIZED: z
+    .preprocess(
+      emptyStringToUndefined,
+      z.enum(["true", "false"]).default("true"),
     )
     .transform((value) => value === "true"),
   SMTP_USER: z.preprocess(emptyStringToUndefined, z.string().optional()),

@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { adminAuth } from "@/lib/firebase-admin";
+import { env } from "@/lib/env";
 import {
   ADMIN_LOGIN_CHALLENGE_COOKIE,
   ADMIN_LOGIN_CODE_DURATION_SECONDS,
@@ -79,11 +80,23 @@ export async function POST(request: Request) {
       { status: 401 },
     );
   }
+  if (!env.ADMIN_ALLOWED_EMAILS.includes(email.trim().toLowerCase())) {
+    return Response.json(
+      { error: "Esta cuenta de Google no tiene acceso al panel." },
+      { status: 403 },
+    );
+  }
 
   const cookieStore = await cookies();
   const challengeToken = cookieStore.get(ADMIN_LOGIN_CHALLENGE_COOKIE)?.value;
 
   if (login.data.action === "request-code") {
+    if (process.env.NODE_ENV !== "production") {
+      return Response.json(
+        { error: "El envío de códigos está disponible solo en producción." },
+        { status: 503 },
+      );
+    }
     const retryAfter = getAdminLoginCodeRetryAfter(challengeToken, email);
     if (retryAfter > 0) {
       return Response.json(
