@@ -27,6 +27,7 @@ export type DashboardAnalytics = {
   nps: number | null;
   averageRecommendation: number | null;
   completionWithContact: number;
+  comments: string[];
 };
 
 export const serviceNames: Record<string, string> = {
@@ -156,6 +157,10 @@ export function buildDashboardAnalytics(
     value: 0,
   }));
   const recommendationScores: number[] = [];
+  const comments = responses
+    .map((response) => String(answer(response, "15") ?? "").trim())
+    .filter(Boolean)
+    .slice(0, 30);
   let promoters = 0;
   let detractors = 0;
   let contactYes = 0;
@@ -232,6 +237,7 @@ export function buildDashboardAnalytics(
     completionWithContact: responses.length
       ? Math.round((contactYes / responses.length) * 100)
       : 0,
+    comments,
   };
 }
 

@@ -365,6 +365,53 @@
   font-weight: 700;
   cursor: pointer;
 }
+.opinionTicker {
+  overflow: hidden;
+  padding: 6px 0;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 5%,
+    #000 95%,
+    transparent
+  );
+}
+.opinionTrack {
+  display: flex;
+  width: max-content;
+  gap: 14px;
+  animation: opinion-scroll 45s linear infinite;
+}
+.opinionTicker:hover .opinionTrack {
+  animation-play-state: paused;
+}
+.opinionItem {
+  width: min(420px, 75vw);
+  min-height: 112px;
+  margin: 0;
+  padding: 20px 22px;
+  border: 1px solid #d8e7ec;
+  border-radius: 12px;
+  background: #f4fafb;
+  color: #29434c;
+  font-size: 15px;
+  line-height: 1.65;
+}
+.opinionItem span {
+  color: #0063a6;
+  font-size: 22px;
+  font-weight: 700;
+}
+@keyframes opinion-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .opinionTrack {
+    animation: none;
+  }
+}
 .titleRow > div > p:last-child {
   margin: 8px 0 0;
   color: #607178;

@@ -52,7 +52,9 @@ function ChartCard({
   children: React.ReactNode;
 }) {
   return (
-    <article className={`${styles.chartCard} ${wide ? styles.chartCardWide : ""}`}>
+    <article
+      className={`${styles.chartCard} ${wide ? styles.chartCardWide : ""}`}
+    >
       <div className={styles.chartHeading}>
         <h3>{title}</h3>
         <p>{description}</p>
@@ -82,7 +84,10 @@ function DonutChart({ data }: { data: ChartDatum[] }) {
               {data.map((item, index) => (
                 <Cell
                   key={item.name}
-                  fill={satisfactionColors[item.name] ?? palette[index % palette.length]}
+                  fill={
+                    satisfactionColors[item.name] ??
+                    palette[index % palette.length]
+                  }
                 />
               ))}
             </Pie>
@@ -101,11 +106,14 @@ function DonutChart({ data }: { data: ChartDatum[] }) {
               className={styles.legendDot}
               style={{
                 background:
-                  satisfactionColors[item.name] ?? palette[index % palette.length],
+                  satisfactionColors[item.name] ??
+                  palette[index % palette.length],
               }}
             />
             <span>{item.name}</span>
-            <strong>{total ? Math.round((item.value / total) * 100) : 0}%</strong>
+            <strong>
+              {total ? Math.round((item.value / total) * 100) : 0}%
+            </strong>
           </li>
         ))}
       </ul>
@@ -119,7 +127,10 @@ export default function AdminDashboardCharts({
   analytics: DashboardAnalytics;
 }) {
   return (
-    <section className={styles.analyticsSection} aria-labelledby="analytics-title">
+    <section
+      className={styles.analyticsSection}
+      aria-labelledby="analytics-title"
+    >
       <div className={styles.analyticsHeader}>
         <div>
           <p className={styles.eyebrow}>Análisis de resultados</p>
@@ -131,7 +142,8 @@ export default function AdminDashboardCharts({
             NPS <strong>{analytics.nps ?? "—"}</strong>
           </span>
           <span>
-            Promedio <strong>{analytics.averageRecommendation ?? "—"}/10</strong>
+            Promedio{" "}
+            <strong>{analytics.averageRecommendation ?? "—"}/10</strong>
           </span>
         </div>
       </div>
@@ -146,14 +158,35 @@ export default function AdminDashboardCharts({
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={analytics.dailyResponses} accessibilityLayer>
                 <defs>
-                  <linearGradient id="responsesFill" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient
+                    id="responsesFill"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
                     <stop offset="5%" stopColor="#0063a6" stopOpacity={0.32} />
                     <stop offset="95%" stopColor="#0063a6" stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid stroke="#e7edef" strokeDasharray="4 4" vertical={false} />
-                <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={12} />
-                <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={28} fontSize={12} />
+                <CartesianGrid
+                  stroke="#e7edef"
+                  strokeDasharray="4 4"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="name"
+                  tickLine={false}
+                  axisLine={false}
+                  fontSize={12}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  tickLine={false}
+                  axisLine={false}
+                  width={28}
+                  fontSize={12}
+                />
                 <Tooltip contentStyle={tooltipStyle} />
                 <Area
                   type="monotone"
@@ -168,16 +201,46 @@ export default function AdminDashboardCharts({
           </div>
         </ChartCard>
 
-        <ChartCard title="Servicios atendidos" description="Distribución por área hospitalaria">
+        <ChartCard
+          title="Servicios atendidos"
+          description="Distribución por área hospitalaria"
+        >
           {analytics.services.length ? (
             <div className={styles.chartTall}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analytics.services} layout="vertical" accessibilityLayer margin={{ left: 8 }}>
-                  <CartesianGrid stroke="#e7edef" strokeDasharray="4 4" horizontal={false} />
-                  <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} fontSize={12} />
-                  <YAxis type="category" dataKey="name" width={122} tickLine={false} axisLine={false} fontSize={11} />
+                <BarChart
+                  data={analytics.services}
+                  layout="vertical"
+                  accessibilityLayer
+                  margin={{ left: 8 }}
+                >
+                  <CartesianGrid
+                    stroke="#e7edef"
+                    strokeDasharray="4 4"
+                    horizontal={false}
+                  />
+                  <XAxis
+                    type="number"
+                    allowDecimals={false}
+                    tickLine={false}
+                    axisLine={false}
+                    fontSize={12}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={122}
+                    tickLine={false}
+                    axisLine={false}
+                    fontSize={11}
+                  />
                   <Tooltip contentStyle={tooltipStyle} />
-                  <Bar dataKey="value" name="Respuestas" fill="#0063a6" radius={[0, 6, 6, 0]} />
+                  <Bar
+                    dataKey="value"
+                    name="Respuestas"
+                    fill="#0063a6"
+                    radius={[0, 6, 6, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -186,16 +249,46 @@ export default function AdminDashboardCharts({
           )}
         </ChartCard>
 
-        <ChartCard title="Motivos de elección" description="Razones para elegir Hospital Angeles">
+        <ChartCard
+          title="Motivos de elección"
+          description="Razones para elegir Hospital Angeles"
+        >
           {analytics.motivations.length ? (
             <div className={styles.chartTall}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analytics.motivations} layout="vertical" accessibilityLayer margin={{ left: 8 }}>
-                  <CartesianGrid stroke="#e7edef" strokeDasharray="4 4" horizontal={false} />
-                  <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} fontSize={12} />
-                  <YAxis type="category" dataKey="name" width={122} tickLine={false} axisLine={false} fontSize={11} />
+                <BarChart
+                  data={analytics.motivations}
+                  layout="vertical"
+                  accessibilityLayer
+                  margin={{ left: 8 }}
+                >
+                  <CartesianGrid
+                    stroke="#e7edef"
+                    strokeDasharray="4 4"
+                    horizontal={false}
+                  />
+                  <XAxis
+                    type="number"
+                    allowDecimals={false}
+                    tickLine={false}
+                    axisLine={false}
+                    fontSize={12}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={122}
+                    tickLine={false}
+                    axisLine={false}
+                    fontSize={11}
+                  />
                   <Tooltip contentStyle={tooltipStyle} />
-                  <Bar dataKey="value" name="Respuestas" fill="#17a6a1" radius={[0, 6, 6, 0]} />
+                  <Bar
+                    dataKey="value"
+                    name="Respuestas"
+                    fill="#17a6a1"
+                    radius={[0, 6, 6, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -204,7 +297,10 @@ export default function AdminDashboardCharts({
           )}
         </ChartCard>
 
-        <ChartCard title="Satisfacción general" description="Evaluación global del servicio">
+        <ChartCard
+          title="Satisfacción general"
+          description="Evaluación global del servicio"
+        >
           <DonutChart data={analytics.satisfaction} />
         </ChartCard>
 
@@ -212,19 +308,44 @@ export default function AdminDashboardCharts({
           <DonutChart data={analytics.languages} />
         </ChartCard>
 
-        <ChartCard title="Puntuación de recomendación" description="Distribución de respuestas NPS de 0 a 10" wide>
+        <ChartCard
+          title="Puntuación de recomendación"
+          description="Distribución de respuestas NPS de 0 a 10"
+          wide
+        >
           <div className={styles.chartMedium}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={analytics.npsDistribution} accessibilityLayer>
-                <CartesianGrid stroke="#e7edef" strokeDasharray="4 4" vertical={false} />
-                <XAxis dataKey="name" tickLine={false} axisLine={false} fontSize={12} />
-                <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={28} fontSize={12} />
+                <CartesianGrid
+                  stroke="#e7edef"
+                  strokeDasharray="4 4"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="name"
+                  tickLine={false}
+                  axisLine={false}
+                  fontSize={12}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  tickLine={false}
+                  axisLine={false}
+                  width={28}
+                  fontSize={12}
+                />
                 <Tooltip contentStyle={tooltipStyle} />
                 <Bar dataKey="value" name="Respuestas" radius={[6, 6, 0, 0]}>
                   {analytics.npsDistribution.map((item) => (
                     <Cell
                       key={item.name}
-                      fill={Number(item.name) >= 9 ? "#16805a" : Number(item.name) >= 7 ? "#e6a23c" : "#c93d4d"}
+                      fill={
+                        Number(item.name) >= 9
+                          ? "#16805a"
+                          : Number(item.name) >= 7
+                            ? "#e6a23c"
+                            : "#c93d4d"
+                      }
                     />
                   ))}
                 </Bar>
@@ -233,16 +354,48 @@ export default function AdminDashboardCharts({
           </div>
         </ChartCard>
 
-        <ChartCard title="Calidad por atributo" description="Promedio: 1 Malo · 4 Excelente" wide>
+        <ChartCard
+          title="Calidad por atributo"
+          description="Promedio: 1 Malo · 4 Excelente"
+          wide
+        >
           {analytics.attributeRatings.length ? (
             <div className={styles.attributesChart}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analytics.attributeRatings} layout="vertical" accessibilityLayer margin={{ left: 8 }}>
-                  <CartesianGrid stroke="#e7edef" strokeDasharray="4 4" horizontal={false} />
-                  <XAxis type="number" domain={[0, 4]} ticks={[0, 1, 2, 3, 4]} tickLine={false} axisLine={false} fontSize={12} />
-                  <YAxis type="category" dataKey="name" width={170} tickLine={false} axisLine={false} fontSize={11} />
+                <BarChart
+                  data={analytics.attributeRatings}
+                  layout="vertical"
+                  accessibilityLayer
+                  margin={{ left: 8 }}
+                >
+                  <CartesianGrid
+                    stroke="#e7edef"
+                    strokeDasharray="4 4"
+                    horizontal={false}
+                  />
+                  <XAxis
+                    type="number"
+                    domain={[0, 4]}
+                    ticks={[0, 1, 2, 3, 4]}
+                    tickLine={false}
+                    axisLine={false}
+                    fontSize={12}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={170}
+                    tickLine={false}
+                    axisLine={false}
+                    fontSize={11}
+                  />
                   <Tooltip contentStyle={tooltipStyle} />
-                  <Bar dataKey="value" name="Promedio" fill="#7957a8" radius={[0, 6, 6, 0]} />
+                  <Bar
+                    dataKey="value"
+                    name="Promedio"
+                    fill="#7957a8"
+                    radius={[0, 6, 6, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -251,8 +404,48 @@ export default function AdminDashboardCharts({
           )}
         </ChartCard>
 
-        <ChartCard title="Datos de contacto" description={`${analytics.completionWithContact}% aceptó compartir sus datos`}>
+        <ChartCard
+          title="Datos de contacto"
+          description={`${analytics.completionWithContact}% aceptó compartir sus datos`}
+        >
           <DonutChart data={analytics.contactConsent} />
+        </ChartCard>
+
+        <ChartCard
+          title="Opiniones y sugerencias"
+          description="Comentarios abiertos compartidos por los pacientes"
+          wide
+        >
+          {analytics.comments.length ? (
+            <div
+              className={styles.opinionTicker}
+              aria-label="Opiniones de pacientes"
+            >
+              <div className={styles.opinionTrack}>
+                {analytics.comments.map((comment, index) => (
+                  <p className={styles.opinionItem} key={`comment-${index}`}>
+                    <span aria-hidden="true">“</span>
+                    {comment}
+                    <span aria-hidden="true">”</span>
+                  </p>
+                ))}
+                {analytics.comments.length > 1 &&
+                  analytics.comments.map((comment, index) => (
+                    <p
+                      aria-hidden="true"
+                      className={styles.opinionItem}
+                      key={`comment-copy-${index}`}
+                    >
+                      <span>“</span>
+                      {comment}
+                      <span>”</span>
+                    </p>
+                  ))}
+              </div>
+            </div>
+          ) : (
+            <EmptyChart />
+          )}
         </ChartCard>
       </div>
     </section>

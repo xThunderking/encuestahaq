@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import {
   GoogleAuthProvider,
   getAuth,
+  getRedirectResult,
+  signInWithRedirect,
   signInWithPopup,
   signOut,
 } from "firebase/auth";
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import styles from "@/app/admin/admin.module.css";
 import { firebaseApp } from "@/lib/firebase/client";
 
@@ -26,7 +28,7 @@ export default function AdminLogin() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function sendRequest(body: unknown) {
+  const sendRequest = useCallback(async (body: unknown) => {
     const response = await fetch("/api/admin/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -34,7 +36,48 @@ export default function AdminLogin() {
     });
     const data = (await response.json()) as LoginResponse;
     return { data, response };
-  }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const auth = getAuth(firebaseApp);
+
+    void getRedirectResult(auth)
+      .then(async (result) => {
+        if (!result || cancelled) return;
+        setLoading(true);
+        const idToken = await result.user.getIdToken();
+        const { data, response } = await sendRequest({
+          action: "request-code",
+          idToken,
+        });
+        if (!response.ok || !data.codeSent || !result.user.email) {
+          await signOut(auth);
+          if (!cancelled) {
+            setError(data.error ?? "No fue posible enviar el código.");
+          }
+          return;
+        }
+        if (!cancelled) {
+          setEmail(result.user.email);
+          setCodeRequested(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setError(
+            "No fue posible iniciar sesión con Google. Inténtelo nuevamente.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sendRequest]);
 
   async function handleGoogleSignIn() {
     setError("");
@@ -44,6 +87,13 @@ export default function AdminLogin() {
       const auth = getAuth(firebaseApp);
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
+      const shouldUseRedirect = window.matchMedia(
+        "(max-width: 768px), (pointer: coarse)",
+      ).matches;
+      if (shouldUseRedirect) {
+        await signInWithRedirect(auth, provider);
+        return;
+      }
       const result = await signInWithPopup(auth, provider);
       const idToken = await result.user.getIdToken();
       const { data, response } = await sendRequest({
