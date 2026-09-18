@@ -41,6 +41,8 @@ const questionLabels: Record<string, string> = {
   "30": "Correo",
   "31": "Teléfono",
   "32": "Acepta compartir contacto",
+  "33": "Uso de estacionamiento",
+  "34": "Calificación de estacionamiento",
 };
 
 /* Legacy SVG chart renderer. Text is now rendered by Excel itself. */
@@ -164,7 +166,11 @@ function styleHeader(row: ExcelJS.Row) {
   row.height = 28;
   row.eachCell((cell) => {
     cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0063A6" } };
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF0063A6" },
+    };
     cell.alignment = { vertical: "middle", wrapText: true };
   });
 }
@@ -234,7 +240,11 @@ export async function createSurveyExcel(
   const title = summary.getCell("A1");
   title.value = "Panel de resultados · Encuestas HAQ";
   title.font = { size: 24, bold: true, color: { argb: "FFFFFFFF" } };
-  title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF174E58" } };
+  title.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF174E58" },
+  };
   title.alignment = { vertical: "middle", horizontal: "left" };
 
   const metrics = [
@@ -295,7 +305,10 @@ export async function createSurveyExcel(
     })),
   ];
   styleHeader(details.getRow(1));
-  details.autoFilter = { from: "A1", to: details.getCell(1, details.columnCount).address };
+  details.autoFilter = {
+    from: "A1",
+    to: details.getCell(1, details.columnCount).address,
+  };
   for (const response of responses) {
     const row: Record<string, unknown> = {
       id: response.submissionId,
@@ -303,7 +316,8 @@ export async function createSurveyExcel(
       surveyCode: response.surveyCode,
       locale: response.locale === "en" ? "Inglés" : "Español",
     };
-    for (const key of answerKeys) row[key] = displayAnswer(key, response.answers[key]);
+    for (const key of answerKeys)
+      row[key] = displayAnswer(key, response.answers[key]);
     const added = details.addRow(row);
     added.alignment = { vertical: "top", wrapText: true };
   }

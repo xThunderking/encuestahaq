@@ -15,7 +15,7 @@ const envSchema = z.object({
   ADMIN_ALLOWED_EMAILS: z
     .string()
     .min(1)
-    .default("reynarayonacho850@gmail.com")
+    .default("reynarayonacho850@gmail.com,rmelgarp@gmail.com")
     .transform((value) =>
       value
         .split(",")

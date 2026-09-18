@@ -28,7 +28,7 @@ export function createDiagnosticSurvey() {
       {
         name: "experience",
         elements: select(
-          [6, 7, 8, 9, 10, 11, 21, 22, 23, 24, 25, 26, 27, 28],
+          [6, 7, 8, 9, 10, 11, 21, 22, 23, 24, 25, 26, 27, 28, 33, 34],
           4,
         ),
       },

@@ -75,6 +75,7 @@ const attributeNames: Record<string, string> = {
   "26": "Personal de enfermería",
   "27": "Personal médico",
   "28": "Satisfacción de check-up",
+  "34": "Servicio de estacionamiento",
 };
 
 const ratingScores: Record<string, number> = {

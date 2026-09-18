@@ -90,6 +90,38 @@
           ]
         },
         {
+          "type": "radiogroup",
+          "name": "servicios_externos_diagnostico_pregunta_33",
+          "title": {
+            "default": "¿Utilizó el servicio de estacionamiento durante su visita?",
+            "en": "Did you use the parking service during your visit?"
+          },
+          "choices": [
+            { "value": 1, "text": { "default": "Sí", "en": "Yes" } },
+            { "value": 0, "text": { "default": "No", "en": "No" } }
+          ],
+          "isRequired": true
+        },
+        {
+          "type": "radiogroup",
+          "name": "servicios_externos_diagnostico_pregunta_34",
+          "choices": [
+            {
+              "value": "excellent",
+              "text": { "default": "EXCELENTE", "en": "EXCELLENT" }
+            },
+            { "value": "good", "text": { "default": "BUENO", "en": "GOOD" } },
+            { "value": "fair", "text": { "default": "REGULAR", "en": "FAIR" } },
+            { "value": "poor", "text": { "default": "MALO", "en": "POOR" } }
+          ],
+          "title": {
+            "default": "¿Cómo calificaría el servicio de estacionamiento?",
+            "en": "How would you rate the parking service?"
+          },
+          "visibleIf": "{servicios_externos_diagnostico_pregunta_33} = 1",
+          "isRequired": true
+        },
+        {
           "type": "html",
           "name": "servicios_externos_diagnostico_pregunta_16",
           "html": {
