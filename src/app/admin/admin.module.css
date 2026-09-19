@@ -661,7 +661,7 @@
 .tableScroll table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 820px;
+  min-width: 1120px;
 }
 .tableScroll th {
   padding: 13px 16px;
@@ -677,6 +677,15 @@
   border-top: 1px solid #e5ebed;
   font-size: 14px;
   vertical-align: middle;
+}
+.responseComment {
+  display: -webkit-box;
+  max-width: 300px;
+  margin: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-height: 1.45;
 }
 .tableScroll tbody tr:hover {
   background: #f8fbfb;
@@ -736,7 +745,7 @@
     padding: 20px;
   }
 }
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .tableScroll {
     padding: 12px;
     overflow: visible;
@@ -772,6 +781,12 @@
     border: 0;
     font-size: 14px;
     overflow-wrap: anywhere;
+  }
+  .responseComment {
+    display: block;
+    max-width: none;
+    overflow: visible;
+    -webkit-line-clamp: unset;
   }
   .tableScroll td::before {
     content: attr(data-label);

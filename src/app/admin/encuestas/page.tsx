@@ -8,6 +8,7 @@ import {
 } from "@/lib/security/admin-session";
 import {
   getAdminDashboardData,
+  motivationNames,
   ratingNames,
   serviceNames,
 } from "@/modules/responses/get-admin-dashboard-data";
@@ -42,11 +43,13 @@ export default async function SurveysPage() {
             <table>
               <thead>
                 <tr>
-                  <th>Folio</th>
                   <th>Fecha</th>
                   <th>Servicio</th>
+                  <th>Motivo</th>
                   <th>Evaluación</th>
                   <th>Recomendación</th>
+                  <th>Estacionamiento</th>
+                  <th>Comentarios</th>
                   <th>Idioma</th>
                 </tr>
               </thead>
@@ -54,9 +57,13 @@ export default async function SurveysPage() {
                 {responses.map((response) => {
                   const answers = response.answers;
                   const service = String(answers[`${prefix}3`] ?? "");
+                  const motivation = String(answers[`${prefix}1`] ?? "");
                   const rating = String(
                     answers[`${prefix}${service === "1" ? "28" : "6"}`] ?? "",
                   );
+                  const parkingUsed = String(answers[`${prefix}33`] ?? "");
+                  const parkingRating = String(answers[`${prefix}34`] ?? "");
+                  const comment = String(answers[`${prefix}15`] ?? "").trim();
                   const date = response.submittedAt
                     ? new Intl.DateTimeFormat("es-MX", {
                         dateStyle: "medium",
@@ -64,12 +71,15 @@ export default async function SurveysPage() {
                         timeZone: "America/Mexico_City",
                       }).format(response.submittedAt)
                     : "Pendiente";
+
                   return (
                     <tr key={response.id}>
-                      <td data-label="Folio">#{response.id}</td>
                       <td data-label="Fecha">{date}</td>
                       <td data-label="Servicio">
                         {serviceNames[service] ?? "Sin dato"}
+                      </td>
+                      <td data-label="Motivo">
+                        {motivationNames[motivation] ?? "Sin dato"}
                       </td>
                       <td data-label="Evaluación">
                         <span
@@ -80,6 +90,20 @@ export default async function SurveysPage() {
                       </td>
                       <td data-label="Recomendación">
                         {String(answers[`${prefix}14`] ?? "Sin dato")}
+                      </td>
+                      <td data-label="Estacionamiento">
+                        {parkingUsed === "1"
+                          ? (ratingNames[parkingRating] ?? "Sin dato")
+                          : parkingUsed === "0"
+                            ? "No utilizó"
+                            : "Sin dato"}
+                      </td>
+                      <td data-label="Comentarios">
+                        {comment ? (
+                          <p className={styles.responseComment}>{comment}</p>
+                        ) : (
+                          "Sin comentario"
+                        )}
                       </td>
                       <td data-label="Idioma">
                         {response.locale === "en" ? "Inglés" : "Español"}
