@@ -9,8 +9,11 @@ import {
   getAllSurveyResponses,
 } from "@/modules/responses/get-admin-dashboard-data";
 import { createSurveyExcel } from "@/modules/reports/create-survey-excel";
+import { surveysDisabledResponse, surveysEnabled } from "@/lib/features/surveys";
 
 export async function GET(request: Request) {
+  if (!surveysEnabled) return surveysDisabledResponse();
+
   const token = (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
   if (!verifyAdminSessionToken(token)) {
     return Response.json({ error: "No autorizado." }, { status: 401 });

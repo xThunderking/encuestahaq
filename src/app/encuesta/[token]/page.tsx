@@ -1,4 +1,7 @@
+import { requireSurveysEnabled } from "@/lib/features/surveys";
+
 export default function SurveyPlaceholderPage() {
+  requireSurveysEnabled();
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-4xl flex-col gap-3 px-6 py-16">
       <h1 className="text-3xl font-semibold">Encuesta de satisfaccion</h1>

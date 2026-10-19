@@ -20,8 +20,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Encuestas HAQ",
-  description: "Sistema de encuestas de satisfaccion hospitalaria",
+  title: "Asistencia Médica HAQ",
+  description: "Sistema de asistencia médica para eventos",
   icons: {
     icon: "/logohaq1.png",
   },

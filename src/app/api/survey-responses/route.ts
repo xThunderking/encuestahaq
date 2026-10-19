@@ -1,8 +1,10 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase-admin";
 import { surveyResponseSchema } from "@/lib/validation/survey-response";
+import { surveysDisabledResponse, surveysEnabled } from "@/lib/features/surveys";
 
 export async function POST(request: Request) {
+  if (!surveysEnabled) return surveysDisabledResponse();
   let body: unknown;
 
   try {

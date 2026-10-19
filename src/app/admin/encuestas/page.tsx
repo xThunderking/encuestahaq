@@ -13,10 +13,12 @@ import {
   serviceNames,
 } from "@/modules/responses/get-admin-dashboard-data";
 import styles from "../admin.module.css";
+import { requireSurveysEnabled } from "@/lib/features/surveys";
 
 const prefix = "servicios_externos_diagnostico_pregunta_";
 
 export default async function SurveysPage() {
+  requireSurveysEnabled();
   const token = (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
   if (!verifyAdminSessionToken(token)) return <AdminLogin />;
   const { responses } = await getAdminDashboardData();

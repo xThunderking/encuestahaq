@@ -1,6 +1,16 @@
-# Encuestas HAQ
+# Asistencia Médica HAQ
 
-Sistema de encuestas de satisfaccion hospitalaria con cuestionario responsivo y almacenamiento de respuestas en MySQL.
+Aplicación HAQ preparada para el control de asistencia médica en eventos.
+
+## Estado temporal del módulo de encuestas
+
+El módulo de encuestas está desactivado por defecto. La portada muestra el espacio
+de asistencia y las páginas y API de encuestas responden como no disponibles. El
+código y las respuestas existentes se conservan.
+
+Para volver a habilitar las encuestas temporalmente, define `ENABLE_SURVEYS="true"`
+en el entorno de ejecución y reinicia la aplicación. El valor predeterminado es
+`false`.
 
 ## Stack
 
@@ -90,9 +100,10 @@ http://localhost:3000
 
 ## Rutas
 
-- `/`: cuestionario de satisfaccion.
-- `/encuesta/[token]`: marcador provisional del modulo de encuestas.
-- `/admin`: acceso administrativo y panel de encuestas mediante Google y un
+- `/`: espacio de asistencia médica para eventos.
+- `/encuesta/[token]`: no disponible mientras las encuestas estén desactivadas.
+- `/admin`: panel de encuestas, temporalmente desactivado; cuando se habilita,
+  ofrece acceso mediante Google y un
   código de seis dígitos enviado al correo de la cuenta Google seleccionada.
   Todo correo de Google que complete ambas verificaciones obtiene acceso
   administrativo.

@@ -9,8 +9,10 @@ import {
 } from "@/lib/security/admin-session";
 import { getAdminDashboardData } from "@/modules/responses/get-admin-dashboard-data";
 import styles from "../admin.module.css";
+import { requireSurveysEnabled } from "@/lib/features/surveys";
 
 export default async function ChartsPage() {
+  requireSurveysEnabled();
   const token = (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
   if (!verifyAdminSessionToken(token)) return <AdminLogin />;
   const { analytics } = await getAdminDashboardData();

@@ -4,10 +4,13 @@ import {
   ADMIN_SESSION_COOKIE,
   verifyAdminSessionToken,
 } from "@/lib/security/admin-session";
+import { surveysDisabledResponse, surveysEnabled } from "@/lib/features/surveys";
 
 const BATCH_SIZE = 400;
 
 export async function DELETE(request: Request) {
+  if (!surveysEnabled) return surveysDisabledResponse();
+
   const token = (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
   if (!verifyAdminSessionToken(token)) {
     return Response.json({ error: "No autorizado." }, { status: 401 });
