@@ -157,7 +157,7 @@ export async function POST(request: Request) {
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
-      path: "/admin",
+    path: "/",
       maxAge: ADMIN_SESSION_DURATION_SECONDS,
     },
   );

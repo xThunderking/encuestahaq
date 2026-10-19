@@ -20,8 +20,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Asistencia Médica HAQ",
-  description: "Sistema de asistencia médica para eventos",
+  title: "Lista de invitados desayuno evento Día del Médico",
+  description: "Control de invitados y asistencia del desayuno por el Día del Médico",
   icons: {
     icon: "/logohaq1.png",
   },

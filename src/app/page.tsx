@@ -1,17 +1,31 @@
-export default function Home() {
+import { cookies } from "next/headers";
+import AdminLogin from "@/components/admin/admin-login";
+import AdminLogout from "@/components/admin/admin-logout";
+import AttendanceTable from "@/components/attendance/attendance-table";
+import { ADMIN_SESSION_COOKIE, verifyAdminSessionToken } from "@/lib/security/admin-session";
+import { getAttendanceGuests } from "@/modules/attendance/get-attendance-guests";
+import styles from "./admin/admin.module.css";
+
+export default async function Home() {
+  const token = (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
+  if (!verifyAdminSessionToken(token)) return <AdminLogin />;
+
+  const guests = await getAttendanceGuests();
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6 py-16 text-slate-800">
-      <section className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-8 shadow-sm sm:p-12">
-        <p className="mb-3 text-sm font-semibold uppercase tracking-[0.16em] text-sky-800">
-          Hospital Ángeles Querétaro
-        </p>
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          Asistencia médica para eventos
-        </h1>
-        <p className="mt-4 max-w-xl text-base leading-7 text-slate-600">
-          Este espacio se está preparando para el registro y control de asistencia.
-        </p>
-      </section>
+    <main className={styles.dashboard}>
+      <header className={styles.dashboardHeader}>
+        <div className={styles.headerInner}>
+          <div>
+            <p className={styles.eyebrow}>Hospital Ángeles Querétaro</p>
+            <h1 className="text-lg font-semibold text-slate-800 sm:text-xl">
+              Lista de invitados desayuno evento Día del Médico
+            </h1>
+          </div>
+          <AdminLogout />
+        </div>
+      </header>
+      <AttendanceTable initialGuests={guests} />
     </main>
   );
 }

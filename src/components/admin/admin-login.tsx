@@ -161,7 +161,7 @@ export default function AdminLogin() {
         />
         <div>
           <p className={styles.eyebrow}>Administración</p>
-          <h1>Panel de encuestas</h1>
+          <h1>Acceso al registro de invitados</h1>
           <p className={styles.loginIntro}>
             {codeRequested
               ? `Ingrese el código de seis dígitos enviado a ${email}.`

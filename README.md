@@ -1,6 +1,7 @@
 # Asistencia Médica HAQ
 
-Aplicación HAQ preparada para el control de asistencia médica en eventos.
+Sistema para la lista de invitados y el control de asistencia del desayuno por el
+Día del Médico.
 
 ## Estado temporal del módulo de encuestas
 
@@ -100,16 +101,15 @@ http://localhost:3000
 
 ## Rutas
 
-- `/`: espacio de asistencia médica para eventos.
+- `/`: tabla de invitados y registro de asistencia, protegidos con acceso administrativo.
 - `/encuesta/[token]`: no disponible mientras las encuestas estén desactivadas.
-- `/admin`: panel de encuestas, temporalmente desactivado; cuando se habilita,
-  ofrece acceso mediante Google y un
+- `/admin`: redirige a la lista principal en `/`.
+- `/api/admin/attendance`: consulta, agrega invitados y registra o deshace asistencias.
+- `/admin/login`: requiere acceso mediante Google y un
   código de seis dígitos enviado al correo de la cuenta Google seleccionada.
-  Todo correo de Google que complete ambas verificaciones obtiene acceso
-  administrativo.
-- `/admin/login`: redirige al acceso administrativo en `/admin`.
+  La cuenta debe estar incluida en `ADMIN_ALLOWED_EMAILS`.
 - `/api/health`: estado basico de la aplicacion, sin consultar la base de datos.
-- `/api/survey-responses`: guarda las encuestas completadas.
+- `/api/survey-responses`: desactivada mientras `ENABLE_SURVEYS` sea `false`.
 
 ## Comandos de calidad
 
