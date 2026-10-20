@@ -1,44 +1,48 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { runTransaction, update, documents, resetQueue } = vi.hoisted(() => {
-  const documents = new Map<string, Record<string, unknown>>();
-  const update = vi.fn(
-    (reference: { id: string }, values: Record<string, unknown>) => {
-      documents.set(reference.id, {
-        ...documents.get(reference.id),
-        ...values,
-      });
-    },
-  );
-  let queue: Promise<unknown> = Promise.resolve();
-  const runTransaction = vi.fn(
-    (callback: (transaction: unknown) => Promise<unknown>) => {
-      const result = queue.then(() =>
-        callback({
-          get: async (reference: { id: string }) => ({
-            id: reference.id,
-            exists: documents.has(reference.id),
-            data: () => documents.get(reference.id),
+const { runTransaction, update, add, documents, resetQueue } = vi.hoisted(
+  () => {
+    const documents = new Map<string, Record<string, unknown>>();
+    const add = vi.fn(async () => ({ id: "new-doctor" }));
+    const update = vi.fn(
+      (reference: { id: string }, values: Record<string, unknown>) => {
+        documents.set(reference.id, {
+          ...documents.get(reference.id),
+          ...values,
+        });
+      },
+    );
+    let queue: Promise<unknown> = Promise.resolve();
+    const runTransaction = vi.fn(
+      (callback: (transaction: unknown) => Promise<unknown>) => {
+        const result = queue.then(() =>
+          callback({
+            get: async (reference: { id: string }) => ({
+              id: reference.id,
+              exists: documents.has(reference.id),
+              data: () => documents.get(reference.id),
+            }),
+            update,
           }),
-          update,
-        }),
-      );
-      queue = result.catch(() => {});
-      return result;
-    },
-  );
-  return {
-    documents,
-    update,
-    runTransaction,
-    resetQueue: () => {
-      queue = Promise.resolve();
-    },
-  };
-});
+        );
+        queue = result.catch(() => {});
+        return result;
+      },
+    );
+    return {
+      documents,
+      update,
+      add,
+      runTransaction,
+      resetQueue: () => {
+        queue = Promise.resolve();
+      },
+    };
+  },
+);
 vi.mock("@/lib/firebase-admin", () => ({
   adminDb: {
-    collection: () => ({ doc: (id: string) => ({ id }) }),
+    collection: () => ({ doc: (id: string) => ({ id }), add }),
     runTransaction,
   },
 }));
@@ -48,7 +52,7 @@ vi.mock("firebase-admin/firestore", () => ({
   },
 }));
 
-import { PATCH } from "@/app/api/admin/attendance/route";
+import { PATCH, POST } from "@/app/api/admin/attendance/route";
 
 const checkIn = (id: string, ticketNumber?: string) =>
   PATCH(
@@ -62,6 +66,7 @@ describe("concurrent attendance registration", () => {
   beforeEach(() => {
     documents.clear();
     update.mockClear();
+    add.mockClear();
     runTransaction.mockClear();
     resetQueue();
   });
@@ -161,4 +166,110 @@ describe("concurrent attendance registration", () => {
     expect(response.status).toBe(400);
     expect(runTransaction).not.toHaveBeenCalled();
   });
+
+  const publicOrigin = "https://evento.us-central1.hosted.app";
+  const internalUrl = "http://localhost:8080/api/admin/attendance";
+  const publicHeaders = {
+    origin: publicOrigin,
+    "x-forwarded-host": "evento.us-central1.hosted.app",
+    "x-forwarded-proto": "https",
+  };
+
+  const sendFromOrigin = async (url: string, headers: HeadersInit) => {
+    const arrival = await PATCH(
+      new Request(url, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({
+          id: "doctor",
+          action: "check-in",
+          ticketNumber: "12345",
+        }),
+      }),
+    );
+    const creation = await POST(
+      new Request(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          doctorName: "Doctor de prueba",
+          hospital: "HACS",
+          hasTicket: true,
+        }),
+      }),
+    );
+    return [arrival, creation];
+  };
+
+  const acceptedOrigins: {
+    name: string;
+    url: string;
+    headers: Record<string, string>;
+  }[] = [
+    {
+      name: "a direct request",
+      url: `${publicOrigin}/api/admin/attendance`,
+      headers: { origin: publicOrigin },
+    },
+    {
+      name: "App Hosting with an internal HTTP URL",
+      url: internalUrl,
+      headers: publicHeaders,
+    },
+    {
+      name: "browser same-origin metadata when hosting rewrites all host headers",
+      url: internalUrl,
+      headers: { origin: publicOrigin, "sec-fetch-site": "same-origin" },
+    },
+    {
+      name: "a public Host header with TLS terminated at the proxy",
+      url: internalUrl,
+      headers: {
+        origin: publicOrigin,
+        host: "evento.us-central1.hosted.app",
+        "x-forwarded-proto": "https",
+      },
+    },
+    {
+      name: "the first host and protocol in a proxy chain",
+      url: internalUrl,
+      headers: {
+        origin: publicOrigin,
+        "x-forwarded-host": "evento.us-central1.hosted.app, internal:8080",
+        "x-forwarded-proto": "https, http",
+      },
+    },
+  ];
+
+  it.each(acceptedOrigins)(
+    "allows doctor creation and arrival from $name",
+    async ({ url, headers }) => {
+      documents.set("doctor", { hasTicket: true, checkedInAt: null });
+      const [arrival, creation] = await sendFromOrigin(url, headers);
+      expect(arrival.status).toBe(200);
+      expect(documents.get("doctor")?.ticketNumber).toBe("12345");
+      expect(creation.status).toBe(201);
+      expect(add).toHaveBeenCalledOnce();
+    },
+  );
+
+  it.each([
+    { ...publicHeaders, origin: "https://another-site.example" },
+    { ...publicHeaders, origin: `${publicOrigin}.another-site.example` },
+    { ...publicHeaders, origin: "null" },
+    { ...publicHeaders, origin: "not-a-url" },
+    { ...publicHeaders, origin: `${publicOrigin}/unexpected-path` },
+    { ...publicHeaders, origin: "http://evento.us-central1.hosted.app" },
+    { ...publicHeaders, origin: "https://evento.us-central1.hosted.app:8443" },
+    { ...publicHeaders, "sec-fetch-site": "cross-site" },
+    { ...publicHeaders, "sec-fetch-site": "same-site" },
+  ])(
+    "rejects an unrelated or invalid origin before writing: %j",
+    async (headers) => {
+      const responses = await sendFromOrigin(internalUrl, headers);
+      expect(responses.map((response) => response.status)).toEqual([403, 403]);
+      expect(runTransaction).not.toHaveBeenCalled();
+      expect(add).not.toHaveBeenCalled();
+    },
+  );
 });
