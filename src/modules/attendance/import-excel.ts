@@ -1,5 +1,6 @@
 import "server-only";
 import ExcelJS from "exceljs";
+import JSZip from "jszip";
 import {
   attendanceImportIdentity,
   IMPORT_HEADERS,
@@ -139,9 +140,43 @@ function cellText(cell: ExcelJS.Cell): string | null {
   return null;
 }
 
+async function normalizeSpreadsheetXmlPrefixes(buffer: ExcelJS.Buffer) {
+  const zip = await JSZip.loadAsync(buffer);
+  let changed = false;
+
+  for (const [path, entry] of Object.entries(zip.files)) {
+    if (entry.dir || !path.startsWith("xl/") || !path.endsWith(".xml"))
+      continue;
+
+    const xml = await entry.async("string");
+    const namespace = xml.match(
+      /xmlns:([A-Za-z_][A-Za-z0-9_.-]*)=(["'])http:\/\/schemas\.openxmlformats\.org\/spreadsheetml\/2006\/main\2/,
+    );
+    if (!namespace) continue;
+
+    const prefix = namespace[1];
+    const normalized = xml.replace(
+      /<(\/?)([A-Za-z_][A-Za-z0-9_.-]*):([A-Za-z_][A-Za-z0-9_.-]*)/g,
+      (tag, slash: string, tagPrefix: string, localName: string) =>
+        tagPrefix === prefix ? `<${slash}${localName}` : tag,
+    );
+    if (normalized !== xml) {
+      zip.file(path, normalized);
+      changed = true;
+    }
+  }
+
+  return changed
+    ? ((await zip.generateAsync({
+        type: "nodebuffer",
+      })) as unknown as ExcelJS.Buffer)
+    : buffer;
+}
+
 export async function parseAttendanceImport(buffer: ExcelJS.Buffer) {
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(buffer, {
+  const readableBuffer = await normalizeSpreadsheetXmlPrefixes(buffer);
+  await workbook.xlsx.load(readableBuffer, {
     ignoreNodes: [
       "dataValidations",
       "conditionalFormatting",

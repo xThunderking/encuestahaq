@@ -42,11 +42,12 @@ export async function POST(request: Request) {
   let parsed: Awaited<ReturnType<typeof parseAttendanceImport>>;
   try {
     parsed = await parseAttendanceImport(await file.arrayBuffer());
-  } catch {
+  } catch (error) {
+    console.error("Unable to read medical event import workbook", error);
     return Response.json(
       {
         error:
-          "No pudimos leer el Excel. Descarga la plantilla, complétala y guárdala en formato .xlsx.",
+          "No pudimos abrir este archivo de Excel. Ábrelo en Excel y guárdalo como Libro de Excel (*.xlsx), o descarga una plantilla nueva y copia ahí los datos.",
       },
       { status: 400 },
     );
