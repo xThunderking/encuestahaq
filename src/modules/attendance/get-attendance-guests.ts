@@ -5,6 +5,7 @@ export type AttendanceGuest = {
   id: string;
   doctorName: string;
   hospital: string;
+  isExtra?: boolean;
   hasTicket: boolean;
   ticketNumber: string | null;
   checkedInAt: string | null;
@@ -24,6 +25,7 @@ export function serializeAttendanceGuest(
     id: document.id,
     doctorName: String(data.doctorName ?? ""),
     hospital: String(data.hospital ?? ""),
+    isExtra: data.isExtra === true,
     hasTicket: data.hasTicket === true,
     ticketNumber:
       typeof data.ticketNumber === "string" ? data.ticketNumber : null,

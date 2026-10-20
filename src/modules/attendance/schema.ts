@@ -17,6 +17,13 @@ export const attendanceGuestSchema = z
         : null,
   }));
 
+export const extraDoctorSchema = z
+  .object({
+    doctorName: z.string().trim().min(2).max(120),
+    hospital: z.enum(["HAQ", "HACS"]),
+  })
+  .strict();
+
 export const attendanceActionSchema = z.discriminatedUnion("action", [
   z.object({
     id: z.string().min(1).max(150),

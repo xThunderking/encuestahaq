@@ -13,6 +13,8 @@ import type { AttendanceGuest } from "@/modules/attendance/get-attendance-guests
 import Image from "next/image";
 import styles from "./attendance.module.css";
 import { useLiveAttendance } from "./use-live-attendance";
+import AttendanceExportButton from "./attendance-export-button";
+import AttendanceImport from "./attendance-import";
 
 type View = "table" | "register" | "stats";
 type Modal = { kind: "ticket" | "undo"; guest: AttendanceGuest } | null;
@@ -129,7 +131,6 @@ export default function AttendanceTable({
   const [view, setView] = useState<View>("table");
   const [query, setQuery] = useState("");
   const [draftName, setDraftName] = useState("");
-  const [hasTicket, setHasTicket] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [modal, setModal] = useState<Modal>(null);
@@ -141,28 +142,44 @@ export default function AttendanceTable({
     useState<ArrivalConfirmation | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const ticketInputRef = useRef<HTMLInputElement>(null);
+  const doctorNameInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const confirmationHeadingRef = useRef<HTMLHeadingElement>(null);
   const isSearching = query.trim().length > 0;
 
-  const registeredCount = guests.filter((guest) => guest.checkedInAt).length;
-  const ticketCount = guests.filter((guest) => guest.hasTicket).length;
-  const pendingCount = guests.length - registeredCount;
-  const attendancePercent = guests.length
-    ? Math.round((registeredCount / guests.length) * 100)
+  const officialGuests = useMemo(
+    () => guests.filter((guest) => guest.isExtra !== true),
+    [guests],
+  );
+  const extraGuests = useMemo(
+    () => guests.filter((guest) => guest.isExtra === true),
+    [guests],
+  );
+  const registeredCount = officialGuests.filter(
+    (guest) => guest.checkedInAt,
+  ).length;
+  const ticketCount = officialGuests.filter((guest) => guest.hasTicket).length;
+  const pendingCount = officialGuests.length - registeredCount;
+  const extraRegisteredCount = extraGuests.filter(
+    (guest) => guest.checkedInAt,
+  ).length;
+  const attendancePercent = officialGuests.length
+    ? Math.round((registeredCount / officialGuests.length) * 100)
     : 0;
   const hospitals = useMemo(
     () =>
-      [...new Set(guests.map((guest) => guest.hospital))].sort((a, b) =>
+      [...new Set(officialGuests.map((guest) => guest.hospital))].sort((a, b) =>
         a.localeCompare(b, "es"),
       ),
-    [guests],
+    [officialGuests],
   );
   const hospitalStats = useMemo(
     () =>
       hospitals
         .map((hospital) => {
-          const invited = guests.filter((guest) => guest.hospital === hospital);
+          const invited = officialGuests.filter(
+            (guest) => guest.hospital === hospital,
+          );
           return {
             name: hospital,
             total: invited.length,
@@ -170,12 +187,12 @@ export default function AttendanceTable({
           };
         })
         .sort((a, b) => b.total - a.total),
-    [guests, hospitals],
+    [officialGuests, hospitals],
   );
   const filteredGuests = useMemo(() => {
     const terms = normalize(query).split(/\s+/).filter(Boolean);
     if (!terms.length) return [];
-    return guests
+    return officialGuests
       .filter((guest) => {
         const text = normalize(
           `${guest.doctorName} ${guest.hospital} ${guest.ticketNumber ?? ""}`,
@@ -183,7 +200,7 @@ export default function AttendanceTable({
         return terms.every((term) => text.includes(term));
       })
       .sort((a, b) => a.doctorName.localeCompare(b.doctorName, "es"));
-  }, [guests, query]);
+  }, [officialGuests, query]);
 
   async function refreshGuests(silent = false) {
     try {
@@ -339,19 +356,12 @@ export default function AttendanceTable({
     event.preventDefault();
     const form = event.currentTarget;
     const data = new FormData(form);
-    const submitter = (event.nativeEvent as SubmitEvent)
-      .submitter as HTMLButtonElement | null;
-    const continueToArrival = submitter?.value !== "list-only";
     setError("");
     setNotice("");
     setSaving(true);
     const payload = {
       doctorName: String(data.get("doctorName") ?? "").trim(),
       hospital: String(data.get("hospital") ?? "").trim(),
-      hasTicket,
-      ticketNumber: hasTicket
-        ? String(data.get("ticketNumber") ?? "").trim()
-        : "",
     };
     try {
       const response = await fetch("/api/admin/attendance", {
@@ -368,21 +378,21 @@ export default function AttendanceTable({
       const guest: AttendanceGuest = {
         ...payload,
         id: result.id,
-        ticketNumber: payload.ticketNumber || null,
-        checkedInAt: null,
+        isExtra: true,
+        hasTicket: false,
+        ticketNumber: null,
+        checkedInAt: new Date().toISOString(),
       };
       rememberGuest(guest);
       void refreshGuests(true);
       form.reset();
       setDraftName("");
-      setHasTicket(true);
       setQuery("");
-      setView("table");
-      if (continueToArrival) registerArrival(guest);
-      else
-        setNotice(
-          `${guest.doctorName} se agregó a la lista. Su asistencia está pendiente de confirmar.`,
-        );
+      setView("register");
+      setNotice(`La llegada de ${guest.doctorName} quedó registrada.`);
+      window.requestAnimationFrame(() =>
+        doctorNameInputRef.current?.focus({ preventScroll: true }),
+      );
     } catch (caught) {
       setError(
         caught instanceof Error
@@ -481,10 +491,10 @@ export default function AttendanceTable({
             <Icon name="chart" size={24} />
           </span>
           <div className={styles.eventProgressSummary}>
-            <p>Avance del evento</p>
+            <p>Avance de la lista oficial</p>
             <div aria-live="polite" aria-atomic="true">
               <strong>
-                {registeredCount} de {guests.length} médicos registrados
+                {registeredCount} de {officialGuests.length} médicos registrados
               </strong>
               <span>{pendingCount} pendientes</span>
             </div>
@@ -493,7 +503,7 @@ export default function AttendanceTable({
             <span>{attendancePercent}% de asistencia</span>
             <progress
               value={registeredCount}
-              max={Math.max(guests.length, 1)}
+              max={Math.max(officialGuests.length, 1)}
               aria-label="Asistencia confirmada"
             />
           </div>
@@ -587,9 +597,19 @@ export default function AttendanceTable({
                     : "¡Bienvenido al Día del Médico!"}
                 </h2>
                 <p>
-                  {isSearching
-                    ? "Selecciona Registrar llegada junto a tu nombre y confirma tu boleto."
-                    : "Nos alegra recibirte. Busca tu nombre para registrar tu llegada y disfrutar del desayuno."}
+                  {isSearching ? (
+                    "Selecciona Registrar llegada junto a tu nombre y confirma tu boleto."
+                  ) : (
+                    <>
+                      <span className={styles.welcomeMessageCompact}>
+                        Busca tu nombre y registra tu llegada.
+                      </span>
+                      <span className={styles.welcomeMessageWide}>
+                        Nos alegra recibirte. Busca tu nombre para registrar tu
+                        llegada y disfrutar del desayuno.
+                      </span>
+                    </>
+                  )}
                 </p>
               </div>
               {isSearching && (
@@ -818,8 +838,8 @@ export default function AttendanceTable({
                 <footer className={styles.tableFooter}>
                   <span aria-live="polite">
                     {query.trim()
-                      ? `${filteredGuests.length} de ${guests.length} invitados`
-                      : `${guests.length} invitados · ${registeredCount} registrados · ${pendingCount} pendientes`}
+                      ? `${filteredGuests.length} de ${officialGuests.length} invitados`
+                      : `${officialGuests.length} invitados · ${registeredCount} registrados · ${pendingCount} pendientes`}
                   </span>
                   <span>
                     <i />
@@ -859,15 +879,8 @@ export default function AttendanceTable({
                 <li>
                   <span>2</span>
                   <div>
-                    <strong>Confirma si tiene boleto</strong>
-                    <p>El número se entrega en la entrada del evento.</p>
-                  </div>
-                </li>
-                <li>
-                  <span>3</span>
-                  <div>
                     <strong>Registra su llegada</strong>
-                    <p>Guarda al médico y confirma su asistencia.</p>
+                    <p>Guarda sus datos y confirma su asistencia.</p>
                   </div>
                 </li>
               </ol>
@@ -892,6 +905,7 @@ export default function AttendanceTable({
                 <label className={styles.field} htmlFor="doctor-name">
                   Nombre completo del médico <span>*</span>
                   <input
+                    ref={doctorNameInputRef}
                     id="doctor-name"
                     name="doctorName"
                     placeholder="Ej. María López Hernández"
@@ -919,60 +933,6 @@ export default function AttendanceTable({
                     <option value="HACS">HACS</option>
                   </select>
                 </label>
-                <fieldset className={styles.ticketChoice}>
-                  <legend>¿El médico tiene boleto?</legend>
-                  <div className={styles.choiceGrid}>
-                    <label
-                      className={
-                        hasTicket ? styles.choiceSelected : styles.choice
-                      }
-                    >
-                      <input
-                        type="radio"
-                        name="hasTicket"
-                        checked={hasTicket}
-                        onChange={() => setHasTicket(true)}
-                      />
-                      <Icon name="ticket" />
-                      <span>
-                        <strong>Sí, tiene boleto</strong>
-                        <small>Recibió uno en la entrada</small>
-                      </span>
-                    </label>
-                    <label
-                      className={
-                        !hasTicket ? styles.choiceSelected : styles.choice
-                      }
-                    >
-                      <input
-                        type="radio"
-                        name="hasTicket"
-                        checked={!hasTicket}
-                        onChange={() => setHasTicket(false)}
-                      />
-                      <Icon name="person" />
-                      <span>
-                        <strong>No tiene boleto</strong>
-                        <small>Registrar sin número</small>
-                      </span>
-                    </label>
-                  </div>
-                </fieldset>
-                {hasTicket && (
-                  <label className={styles.field} htmlFor="doctor-ticket">
-                    No. de boleto <em>Opcional</em>
-                    <input
-                      id="doctor-ticket"
-                      name="ticketNumber"
-                      placeholder="Ej. 0248"
-                      maxLength={40}
-                      autoComplete="off"
-                    />
-                    <small>
-                      Puedes capturarlo ahora o al confirmar la llegada.
-                    </small>
-                  </label>
-                )}
               </fieldset>
               <div className={styles.formActions}>
                 <button
@@ -984,15 +944,6 @@ export default function AttendanceTable({
                 >
                   {saving ? "Guardando médico…" : "Agregar y registrar llegada"}
                   <Icon name="arrow" size={18} />
-                </button>
-                <button
-                  type="submit"
-                  name="action"
-                  value="list-only"
-                  className={styles.textButton}
-                  disabled={saving}
-                >
-                  Solo agregar a la lista
                 </button>
               </div>
             </form>
@@ -1007,25 +958,28 @@ export default function AttendanceTable({
                 <h2 id="stats-title">Estadísticas de asistencia</h2>
                 <p>Consulta el avance del registro de los médicos invitados.</p>
               </div>
-              <button
-                type="button"
-                className={styles.secondaryButton}
-                aria-label={
-                  refreshing
-                    ? "Actualizando estadísticas"
-                    : "Actualizar estadísticas"
-                }
-                disabled={refreshing}
-                onClick={() => void refreshGuests()}
-              >
-                <Icon name="refresh" size={17} />
-                {refreshing ? "Actualizando…" : "Actualizar"}
-              </button>
+              <div className={styles.statsActions}>
+                <AttendanceExportButton />
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  aria-label={
+                    refreshing
+                      ? "Actualizando estadísticas"
+                      : "Actualizar estadísticas"
+                  }
+                  disabled={refreshing}
+                  onClick={() => void refreshGuests()}
+                >
+                  <Icon name="refresh" size={17} />
+                  {refreshing ? "Actualizando…" : "Actualizar"}
+                </button>
+              </div>
             </div>
             <div className={styles.metricGrid}>
               {(
                 [
-                  ["list", "Médicos en la lista", guests.length],
+                  ["list", "Lista oficial", officialGuests.length],
                   ["check", "Asistencias confirmadas", registeredCount],
                   ["person", "Pendientes de llegada", pendingCount],
                   ["ticket", "Invitados con boleto", ticketCount],
@@ -1105,6 +1059,65 @@ export default function AttendanceTable({
                 )}
               </article>
             </div>
+            <section
+              className={styles.extrasReport}
+              aria-labelledby="extras-report-title"
+            >
+              <div className={styles.extrasHeader}>
+                <div>
+                  <p className={styles.eyebrow}>Registros de recepción</p>
+                  <h3 id="extras-report-title">EXTRAS</h3>
+                  <p>Doctores agregados fuera de la lista oficial.</p>
+                </div>
+                <span className={styles.extrasTotal}>
+                  {extraGuests.length} en total
+                </span>
+              </div>
+              <div className={styles.extrasMetrics}>
+                <div>
+                  <span>Total</span>
+                  <strong>{extraGuests.length}</strong>
+                </div>
+                <div>
+                  <span>Asistieron</span>
+                  <strong>{extraRegisteredCount}</strong>
+                </div>
+                <div>
+                  <span>Pendientes</span>
+                  <strong>{extraGuests.length - extraRegisteredCount}</strong>
+                </div>
+              </div>
+              {extraGuests.length ? (
+                <ul className={styles.extrasList}>
+                  {[...extraGuests]
+                    .sort((a, b) =>
+                      a.doctorName.localeCompare(b.doctorName, "es"),
+                    )
+                    .map((guest) => (
+                      <li className={styles.extraGuestRow} key={guest.id}>
+                        <div>
+                          <strong>{guest.doctorName}</strong>
+                          <span>{guest.hospital}</span>
+                        </div>
+                        <span
+                          className={`${styles.statusBadge} ${
+                            guest.checkedInAt
+                              ? styles.registeredStatus
+                              : styles.pendingStatus
+                          }`}
+                        >
+                          {guest.checkedInAt ? "Asistió" : "Pendiente"}
+                        </span>
+                      </li>
+                    ))}
+                </ul>
+              ) : (
+                <p className={styles.extrasEmpty}>
+                  Aún no hay registros en este apartado.
+                </p>
+              )}
+            </section>
+            <AttendanceImport onImported={() => void refreshGuests(true)} />
           </section>
         )}
         <footer className={styles.appFooter}>

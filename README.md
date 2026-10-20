@@ -14,11 +14,12 @@ boleto se registran directamente. Después de guardar la llegada, aparece una
 confirmación con el nombre del médico y, a los 5 segundos, vuelve automáticamente
 a la bienvenida con el buscador limpio para recibir al siguiente invitado.
 
-Si el médico no está en la lista, recepción puede agregarlo en **Registro doctor**
-y continuar con su asistencia, o solo agregarlo para después. El número de boleto
-es opcional al agregar al médico. La lista y las estadísticas se sincronizan en
-tiempo real en todos los equipos abiertos mediante suscripciones de Firestore y
-Server-Sent Events (SSE). Se utiliza la base `(default)` existente; las reglas de
+Si el médico no aparece en la lista, recepción puede agregar su nombre y hospital
+desde **Registro doctor**. El sistema confirma su llegada directamente, no solicita
+boleto y deja el formulario listo para capturar al siguiente. Estos registros
+aparecen en una sección **EXTRAS**, separada de la lista oficial en las estadísticas
+y en el Excel. La lista y las estadísticas se sincronizan en tiempo real en todos
+los equipos abiertos mediante suscripciones de Firestore y Server-Sent Events (SSE). Se utiliza la base `(default)` existente; las reglas de
 acceso de Firestore se mantienen cerradas y la suscripción pasa por el servidor.
 
 El avance general (registrados, pendientes y porcentaje) y el indicador de
@@ -52,6 +53,30 @@ un tamaño de letra de al menos 16 px y los controles táctiles tienen áreas de
 interacción amplias. Las ventanas de registro ajustan su altura al espacio visible
 al girar el dispositivo o abrir el teclado. Se respetan las áreas seguras de pantalla
 y el zoom del navegador.
+
+### Reporte de asistencia en Excel
+
+En **Estadísticas → Descargar Excel** se genera un archivo `.xlsx` con cinco hojas
+para la lista oficial: **Resumen**, **Todos los médicos**, **Asistieron**, **Sin asistencia**
+y **Boletos**. Si hay registros de recepción, se agrega una hoja **EXTRAS** con su
+asistencia y hora de llegada; el resumen presenta sus totales por separado. Las listas
+están ordenadas alfabéticamente, los boletos por número y los ceros iniciales se
+conservan. El reporte usa los colores del hospital, filtros, encabezados fijos y
+fechas y horas de Ciudad de México. La descarga no requiere iniciar sesión.
+
+### Registro de médicos desde una plantilla de Excel
+
+En **Estadísticas → Agrega tu lista de invitados** se puede descargar una plantilla
+`.xlsx` y subirla completa para agregar médicos. La hoja **Médicos** tiene solamente
+tres columnas: **NOMBRE DEL MEDICO**, **HOSPITAL** (HAQ o HACS) y **BOLETO** (SI o NO).
+Incluye listas desplegables y una hoja de instrucciones. No contiene médicos de ejemplo.
+
+Se admiten hasta 500 médicos por archivo, con un máximo de 2 MB. El sistema valida
+todo el archivo y señala las filas incorrectas antes de guardar. Los nuevos médicos
+quedan pendientes de llegada y sin número de boleto; el número se confirma en el
+registro del evento. Los nombres y hospitales que ya existan se omiten y conservan
+sus datos y asistencias. Volver a subir el archivo no vuelve a agregar esos médicos.
+Los registros se guardan en una transacción y se sincronizan con los demás equipos.
 
 ### Datos ficticios para pruebas
 

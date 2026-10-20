@@ -1,12 +1,13 @@
 import { FieldValue, type Transaction } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase-admin";
+import { isAllowedRequestOrigin } from "@/lib/security/request-origin";
 import {
   normalizeTicketNumber,
   ticketReservationId,
 } from "@/modules/attendance/ticket-number";
 import {
   attendanceActionSchema,
-  attendanceGuestSchema,
+  extraDoctorSchema,
 } from "@/modules/attendance/schema";
 import {
   getAttendanceGuests,
@@ -66,51 +67,6 @@ async function findTicketConflict(
   };
 }
 
-function validateOrigin(request: Request) {
-  const origin = request.headers.get("origin");
-  if (!origin) return true;
-
-  try {
-    const parsedOrigin = new URL(origin);
-    if (
-      !["http:", "https:"].includes(parsedOrigin.protocol) ||
-      parsedOrigin.origin !== origin
-    ) {
-      return false;
-    }
-
-    // The browser knows the public origin even when hosting rewrites the URL.
-    // Sec-* headers cannot be supplied by browser JavaScript.
-    const fetchSite = request.headers.get("sec-fetch-site");
-    if (fetchSite === "same-origin") return true;
-    if (fetchSite === "cross-site" || fetchSite === "same-site") return false;
-
-    const requestUrl = new URL(request.url);
-    if (origin === requestUrl.origin) return true;
-
-    // Support clients without Fetch Metadata using the reverse proxy's headers.
-    const host =
-      request.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ||
-      request.headers.get("host");
-    const protocol =
-      request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() ||
-      requestUrl.protocol.slice(0, -1);
-    if (!host || !["http", "https"].includes(protocol)) return false;
-
-    const publicUrl = new URL(`${protocol}://${host}`);
-    return (
-      publicUrl.origin === origin &&
-      publicUrl.pathname === "/" &&
-      !publicUrl.search &&
-      !publicUrl.hash &&
-      !publicUrl.username &&
-      !publicUrl.password
-    );
-  } catch {
-    return false;
-  }
-}
-
 export async function GET() {
   try {
     const guests = await getAttendanceGuests();
@@ -127,7 +83,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  if (!validateOrigin(request)) {
+  if (!isAllowedRequestOrigin(request)) {
     return Response.json({ error: "Origen no permitido." }, { status: 403 });
   }
 
@@ -138,10 +94,10 @@ export async function POST(request: Request) {
     return Response.json({ error: "Solicitud no válida." }, { status: 400 });
   }
 
-  const result = attendanceGuestSchema.safeParse(body);
+  const result = extraDoctorSchema.safeParse(body);
   if (!result.success) {
     return Response.json(
-      { error: "Revisa el nombre, hospital y datos del boleto." },
+      { error: "Revisa el nombre y el hospital del médico." },
       { status: 400 },
     );
   }
@@ -149,31 +105,13 @@ export async function POST(request: Request) {
   try {
     const reference = guestsCollection().doc();
     const outcome = await adminDb.runTransaction(async (transaction) => {
-      let reservation: Awaited<ReturnType<typeof findTicketConflict>> = null;
-      if (result.data.ticketNumber) {
-        reservation = await findTicketConflict(
-          transaction,
-          reference.id,
-          result.data.ticketNumber,
-        );
-        if (!reservation) {
-          return {
-            status: 409,
-            error: "Ese número de boleto ya está asignado a otro médico.",
-          };
-        }
-      }
-
-      if (reservation && !reservation.reservationAlreadyOwned) {
-        transaction.create(reservation.reservationReference, {
-          guestId: reference.id,
-          normalizedTicketNumber: reservation.normalizedTicketNumber,
-          createdAt: FieldValue.serverTimestamp(),
-        });
-      }
       transaction.create(reference, {
         ...result.data,
-        checkedInAt: null,
+        isExtra: true,
+        hasTicket: false,
+        ticketNumber: null,
+        ticketNumberNormalized: null,
+        checkedInAt: FieldValue.serverTimestamp(),
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       });
@@ -191,7 +129,7 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  if (!validateOrigin(request)) {
+  if (!isAllowedRequestOrigin(request)) {
     return Response.json({ error: "Origen no permitido." }, { status: 403 });
   }
 
