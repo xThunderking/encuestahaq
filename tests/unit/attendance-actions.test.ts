@@ -1,48 +1,116 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { runTransaction, update, add, documents, resetQueue } = vi.hoisted(
-  () => {
-    const documents = new Map<string, Record<string, unknown>>();
-    const add = vi.fn(async () => ({ id: "new-doctor" }));
-    const update = vi.fn(
-      (reference: { id: string }, values: Record<string, unknown>) => {
-        documents.set(reference.id, {
-          ...documents.get(reference.id),
-          ...values,
-        });
-      },
-    );
-    let queue: Promise<unknown> = Promise.resolve();
-    const runTransaction = vi.fn(
-      (callback: (transaction: unknown) => Promise<unknown>) => {
-        const result = queue.then(() =>
-          callback({
-            get: async (reference: { id: string }) => ({
+const {
+  runTransaction,
+  update,
+  create,
+  remove,
+  documents,
+  reservations,
+  collection,
+  resetQueue,
+} = vi.hoisted(() => {
+  const documents = new Map<string, Record<string, unknown>>();
+  const reservations = new Map<string, Record<string, unknown>>();
+  let nextId = 1;
+  const collection = (name: string) => ({
+    doc: (id?: string) => ({
+      id: id ?? `new-doctor-${nextId++}`,
+      collectionName: name,
+    }),
+    where: (field: string, _operator: string, value: unknown) => ({
+      collectionName: name,
+      field,
+      value,
+      isQuery: true,
+    }),
+  });
+  const update = vi.fn(
+    (reference: { id: string }, values: Record<string, unknown>) => {
+      documents.set(reference.id, {
+        ...documents.get(reference.id),
+        ...values,
+      });
+    },
+  );
+  const create = vi.fn(
+    (
+      reference: { id: string; collectionName: string },
+      values: Record<string, unknown>,
+    ) => {
+      const target =
+        reference.collectionName === "medicalEventTicketNumbers"
+          ? reservations
+          : documents;
+      target.set(reference.id, values);
+    },
+  );
+  const remove = vi.fn((reference: { id: string; collectionName: string }) => {
+    const target =
+      reference.collectionName === "medicalEventTicketNumbers"
+        ? reservations
+        : documents;
+    target.delete(reference.id);
+  });
+  let queue: Promise<unknown> = Promise.resolve();
+  const runTransaction = vi.fn(
+    (callback: (transaction: unknown) => Promise<unknown>) => {
+      const result = queue.then(() =>
+        callback({
+          get: async (reference: {
+            id?: string;
+            collectionName: string;
+            field?: string;
+            value?: unknown;
+            isQuery?: boolean;
+          }) => {
+            if (reference.isQuery) {
+              const matches = [...documents.entries()]
+                .filter(
+                  ([, data]) => data[reference.field!] === reference.value,
+                )
+                .map(([id, data]) => ({ id, data }));
+              return {
+                docs: matches.map(({ id, data }) => ({ id, data: () => data })),
+              };
+            }
+            const target =
+              reference.collectionName === "medicalEventTicketNumbers"
+                ? reservations
+                : documents;
+            const data = target.get(reference.id!);
+            return {
               id: reference.id,
-              exists: documents.has(reference.id),
-              data: () => documents.get(reference.id),
-            }),
-            update,
-          }),
-        );
-        queue = result.catch(() => {});
-        return result;
-      },
-    );
-    return {
-      documents,
-      update,
-      add,
-      runTransaction,
-      resetQueue: () => {
-        queue = Promise.resolve();
-      },
-    };
-  },
-);
+              exists: target.has(reference.id!),
+              data: () => data,
+            };
+          },
+          update,
+          create,
+          delete: remove,
+        }),
+      );
+      queue = result.catch(() => {});
+      return result;
+    },
+  );
+  return {
+    documents,
+    reservations,
+    update,
+    create,
+    remove,
+    collection,
+    runTransaction,
+    resetQueue: () => {
+      queue = Promise.resolve();
+      nextId = 1;
+    },
+  };
+});
 vi.mock("@/lib/firebase-admin", () => ({
   adminDb: {
-    collection: () => ({ doc: (id: string) => ({ id }), add }),
+    collection,
     runTransaction,
   },
 }));
@@ -65,8 +133,10 @@ const checkIn = (id: string, ticketNumber?: string) =>
 describe("concurrent attendance registration", () => {
   beforeEach(() => {
     documents.clear();
+    reservations.clear();
     update.mockClear();
-    add.mockClear();
+    create.mockClear();
+    remove.mockClear();
     runTransaction.mockClear();
     resetQueue();
   });
@@ -249,7 +319,7 @@ describe("concurrent attendance registration", () => {
       expect(arrival.status).toBe(200);
       expect(documents.get("doctor")?.ticketNumber).toBe("12345");
       expect(creation.status).toBe(201);
-      expect(add).toHaveBeenCalledOnce();
+      expect(create).toHaveBeenCalledTimes(2);
     },
   );
 
@@ -269,7 +339,7 @@ describe("concurrent attendance registration", () => {
       const responses = await sendFromOrigin(internalUrl, headers);
       expect(responses.map((response) => response.status)).toEqual([403, 403]);
       expect(runTransaction).not.toHaveBeenCalled();
-      expect(add).not.toHaveBeenCalled();
+      expect(create).not.toHaveBeenCalled();
     },
   );
 });

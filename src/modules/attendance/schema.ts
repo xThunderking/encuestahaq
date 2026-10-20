@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeTicketNumber } from "@/modules/attendance/ticket-number";
 
 export const attendanceGuestSchema = z
   .object({
@@ -10,6 +11,10 @@ export const attendanceGuestSchema = z
   .transform((guest) => ({
     ...guest,
     ticketNumber: guest.hasTicket ? guest.ticketNumber?.trim() || null : null,
+    ticketNumberNormalized:
+      guest.hasTicket && guest.ticketNumber?.trim()
+        ? normalizeTicketNumber(guest.ticketNumber)
+        : null,
   }));
 
 export const attendanceActionSchema = z.discriminatedUnion("action", [

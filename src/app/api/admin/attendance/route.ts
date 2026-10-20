@@ -1,5 +1,9 @@
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, type Transaction } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase-admin";
+import {
+  normalizeTicketNumber,
+  ticketReservationId,
+} from "@/modules/attendance/ticket-number";
 import {
   attendanceActionSchema,
   attendanceGuestSchema,
@@ -8,6 +12,59 @@ import {
   getAttendanceGuests,
   serializeAttendanceGuest,
 } from "@/modules/attendance/get-attendance-guests";
+
+const guestsCollection = () => adminDb.collection("medicalEventGuests");
+
+function ticketReservationReference(normalizedTicketNumber: string) {
+  return adminDb
+    .collection("medicalEventTicketNumbers")
+    .doc(ticketReservationId(normalizedTicketNumber));
+}
+
+async function findTicketConflict(
+  transaction: Transaction,
+  guestId: string,
+  ticketNumber: string,
+) {
+  const normalizedTicketNumber = normalizeTicketNumber(ticketNumber);
+  const reservationReference = ticketReservationReference(
+    normalizedTicketNumber,
+  );
+  const reservation = await transaction.get(reservationReference);
+  const ticketQuery = guestsCollection();
+  const normalizedMatches = await transaction.get(
+    ticketQuery.where("ticketNumberNormalized", "==", normalizedTicketNumber),
+  );
+  const enteredNumberMatches = await transaction.get(
+    ticketQuery.where("ticketNumber", "==", ticketNumber.trim()),
+  );
+  const normalizedLegacyMatches =
+    normalizedTicketNumber === ticketNumber.trim()
+      ? null
+      : await transaction.get(
+          ticketQuery.where("ticketNumber", "==", normalizedTicketNumber),
+        );
+
+  const hasOtherGuest = [
+    ...normalizedMatches.docs,
+    ...enteredNumberMatches.docs,
+    ...(normalizedLegacyMatches?.docs ?? []),
+  ].some((document) => document.id !== guestId);
+  const reservationData = reservation.data();
+
+  if (
+    hasOtherGuest ||
+    (reservation.exists && reservationData?.guestId !== guestId)
+  ) {
+    return null;
+  }
+
+  return {
+    normalizedTicketNumber,
+    reservationReference,
+    reservationAlreadyOwned: reservationData?.guestId === guestId,
+  };
+}
 
 function validateOrigin(request: Request) {
   const origin = request.headers.get("origin");
@@ -90,13 +147,40 @@ export async function POST(request: Request) {
   }
 
   try {
-    const reference = await adminDb.collection("medicalEventGuests").add({
-      ...result.data,
-      checkedInAt: null,
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
+    const reference = guestsCollection().doc();
+    const outcome = await adminDb.runTransaction(async (transaction) => {
+      let reservation: Awaited<ReturnType<typeof findTicketConflict>> = null;
+      if (result.data.ticketNumber) {
+        reservation = await findTicketConflict(
+          transaction,
+          reference.id,
+          result.data.ticketNumber,
+        );
+        if (!reservation) {
+          return {
+            status: 409,
+            error: "Ese número de boleto ya está asignado a otro médico.",
+          };
+        }
+      }
+
+      if (reservation && !reservation.reservationAlreadyOwned) {
+        transaction.create(reservation.reservationReference, {
+          guestId: reference.id,
+          normalizedTicketNumber: reservation.normalizedTicketNumber,
+          createdAt: FieldValue.serverTimestamp(),
+        });
+      }
+      transaction.create(reference, {
+        ...result.data,
+        checkedInAt: null,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return { status: 201, id: reference.id };
     });
-    return Response.json({ id: reference.id }, { status: 201 });
+    const { status, ...body } = outcome;
+    return Response.json(body, { status });
   } catch (error) {
     console.error("Unable to add medical event guest", error);
     return Response.json(
@@ -124,9 +208,7 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const reference = adminDb
-      .collection("medicalEventGuests")
-      .doc(result.data.id);
+    const reference = guestsCollection().doc(result.data.id);
     const action = result.data;
     const outcome = await adminDb.runTransaction(async (transaction) => {
       const document = await transaction.get(reference);
@@ -145,9 +227,56 @@ export async function PATCH(request: Request) {
             error: "Ingresa el número de boleto para registrar la asistencia.",
           };
         }
+
+        const reservation =
+          guest?.hasTicket === true
+            ? await findTicketConflict(transaction, reference.id, ticketNumber!)
+            : null;
+        if (guest?.hasTicket === true && !reservation) {
+          return {
+            status: 409,
+            error: "Ese número de boleto ya está asignado a otro médico.",
+          };
+        }
+
+        const previousTicketNumber =
+          typeof guest?.ticketNumber === "string" ? guest.ticketNumber : null;
+        const previousNormalizedTicketNumber =
+          typeof guest?.ticketNumberNormalized === "string"
+            ? guest.ticketNumberNormalized
+            : previousTicketNumber
+              ? normalizeTicketNumber(previousTicketNumber)
+              : null;
+        const previousReservationReference =
+          previousNormalizedTicketNumber &&
+          previousNormalizedTicketNumber !== reservation?.normalizedTicketNumber
+            ? ticketReservationReference(previousNormalizedTicketNumber)
+            : null;
+        const previousReservation = previousReservationReference
+          ? await transaction.get(previousReservationReference)
+          : null;
+
+        if (reservation && !reservation.reservationAlreadyOwned) {
+          transaction.create(reservation.reservationReference, {
+            guestId: reference.id,
+            normalizedTicketNumber: reservation.normalizedTicketNumber,
+            createdAt: FieldValue.serverTimestamp(),
+          });
+        }
+        if (
+          previousReservationReference &&
+          previousReservation?.data()?.guestId === reference.id
+        ) {
+          transaction.delete(previousReservationReference);
+        }
         transaction.update(reference, {
           checkedInAt: FieldValue.serverTimestamp(),
-          ...(guest?.hasTicket === true ? { ticketNumber } : {}),
+          ...(guest?.hasTicket === true
+            ? {
+                ticketNumber,
+                ticketNumberNormalized: reservation!.normalizedTicketNumber,
+              }
+            : {}),
           updatedAt: FieldValue.serverTimestamp(),
         });
         return { status: 200, registered: true, alreadyRegistered: false };

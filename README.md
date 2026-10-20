@@ -32,6 +32,10 @@ para evitar que una conexión lenta bloquee el canal de actualizaciones.
 
 Las llegadas se guardan en transacciones: si dos equipos registran al mismo médico,
 se conserva la primera asistencia y su boleto, y el segundo equipo recibe un aviso.
+Cada número de boleto queda reservado para un solo médico al agregarlo o confirmar
+la llegada; la comparación ignora espacios al inicio y final y diferencias entre
+mayúsculas y minúsculas. Si el número ya está asignado, el sistema lo rechaza y
+muestra un aviso.
 Al deshacer una llegada, se verifica que corresponda a la que el operador tenía
 abierta; si otro equipo registró una llegada nueva, la solicitud anterior se rechaza.
 Las estadísticas se calculan a partir de la misma lista sincronizada. El servidor
