@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Poppins } from "next/font/google";
 import FirebaseAnalytics from "@/components/firebase-analytics";
 import "./globals.css";
@@ -19,9 +19,17 @@ const poppins = Poppins({
   weight: ["400", "600", "700"],
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#1265b0",
+};
+
 export const metadata: Metadata = {
   title: "Lista de invitados desayuno evento Día del Médico",
-  description: "Control de invitados y asistencia del desayuno por el Día del Médico",
+  description:
+    "Control de invitados y asistencia del desayuno por el Día del Médico",
   icons: {
     icon: "/logohaq1.png",
   },

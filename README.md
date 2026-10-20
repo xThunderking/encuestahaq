@@ -39,6 +39,16 @@ debe permitir respuestas HTTP en streaming sin buffering para `/api/admin/attend
 La conexión se renueva automáticamente cada cuatro minutos para respetar los
 límites de duración de las solicitudes del servidor.
 
+### Diseño adaptable
+
+La interfaz adapta el menú, los formularios y los gráficos al ancho y a la altura
+disponibles. En tabletas la lista se presenta en dos columnas de tarjetas; en
+móviles, en una columna; y en pantallas amplias conserva la tabla. Los campos usan
+un tamaño de letra de al menos 16 px y los controles táctiles tienen áreas de
+interacción amplias. Las ventanas de registro ajustan su altura al espacio visible
+al girar el dispositivo o abrir el teclado. Se respetan las áreas seguras de pantalla
+y el zoom del navegador.
+
 ### Datos ficticios para pruebas
 
 Para agregar 20 registros identificados como **PRUEBA** a la lista compartida,

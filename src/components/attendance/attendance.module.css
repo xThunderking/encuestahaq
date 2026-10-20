@@ -5,7 +5,12 @@
   --ink: #223d5b;
   --muted: #5c718a;
   --line: #dce7f3;
+  --page-gutter: clamp(12px, 3vw, 40px);
   min-height: 100vh;
+  min-height: 100dvh;
+  min-width: 0;
+  width: 100%;
+  color-scheme: light;
   background:
     radial-gradient(ellipse at 95% 0%, #b7effc70, transparent 43%),
     radial-gradient(ellipse at 0% 45%, #cbdffd55, transparent 50%), #f1f6fc;
@@ -14,6 +19,15 @@
   font-size: 16px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+}
+.app,
+.app *,
+.app *::before,
+.app *::after {
+  box-sizing: border-box;
+}
+.app svg {
+  flex-shrink: 0;
 }
 .app button,
 .app input,
@@ -52,14 +66,17 @@
     box-shadow 0.16s;
 }
 .navbar {
+  padding-top: env(safe-area-inset-top, 0px);
   background: #fff;
   border-top: 5px solid #1265b0;
   border-bottom: 1px solid var(--line);
 }
 .navbarInner {
-  max-width: 1440px;
+  max-width: 1600px;
   min-height: 120px;
-  padding: 10px 40px;
+  padding: 10px var(--page-gutter);
+  padding-left: max(var(--page-gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--page-gutter), env(safe-area-inset-right, 0px));
   margin: auto;
   display: flex;
   align-items: center;
@@ -67,6 +84,7 @@
   gap: 32px;
 }
 .brand {
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 20px;
@@ -89,6 +107,7 @@
   margin-bottom: 4px !important;
 }
 .brand h1 {
+  overflow-wrap: anywhere;
   font-size: 13px;
   line-height: 1.45;
   font-weight: 500;
@@ -136,9 +155,13 @@
   box-shadow: 0 4px 10px #1265b02b;
 }
 .content {
-  max-width: 1440px;
+  width: 100%;
+  max-width: 1600px;
+  min-width: 0;
   margin: auto;
-  padding: 24px 40px 0;
+  padding: 24px var(--page-gutter) env(safe-area-inset-bottom, 0px);
+  padding-left: max(var(--page-gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--page-gutter), env(safe-area-inset-right, 0px));
 }
 .syncStatus {
   display: flex;
@@ -148,6 +171,7 @@
   color: #526d86;
   font-size: 12px;
   margin: -8px 2px 12px;
+  line-height: 1.6;
 }
 .syncStatus i {
   width: 8px;
@@ -502,8 +526,8 @@
   border: 1px solid var(--line);
   background: #fff;
   border-radius: 9px;
-  width: 37px;
-  height: 37px;
+  width: 44px;
+  height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -564,10 +588,10 @@
   border: 0;
   background: transparent;
   color: var(--teal);
-  font-size: 12px !important;
+  font-size: 14px !important;
   font-weight: 650 !important;
   padding: 8px 0;
-  min-height: 36px;
+  min-height: 44px;
 }
 .textButton:hover {
   color: var(--navy);
@@ -575,7 +599,7 @@
 }
 .tableScroll {
   overflow: auto;
-  max-height: clamp(360px, calc(100dvh - 370px), 760px);
+  max-height: clamp(260px, calc(100dvh - 460px), 900px);
 }
 .table {
   width: 100%;
@@ -632,6 +656,7 @@
   box-shadow: inset 4px 0 #19976b;
 }
 .doctorCell {
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 11px;
@@ -654,8 +679,11 @@
   font-size: 16px;
   font-weight: 650;
   min-width: 130px;
+  overflow-wrap: anywhere;
 }
 .hospitalName {
+  min-width: 0;
+  overflow-wrap: anywhere;
   display: inline-flex;
   align-items: center;
   color: #195f9e;
@@ -691,7 +719,8 @@
   background: #f3f5f6;
 }
 .ticketNumber {
-  font-family: var(--font-geist-mono), monospace;
+  font-family: var(--font-geist-mono, monospace), monospace;
+  overflow-wrap: anywhere;
   font-size: 12px;
   color: #607885;
 }
@@ -751,8 +780,8 @@
   color: #6a7f94;
   background: none;
   border: 0;
-  font-size: 12px !important;
-  min-height: 40px;
+  font-size: 13px !important;
+  min-height: 44px;
   padding: 6px 0;
 }
 .undoButton:hover {
@@ -885,7 +914,7 @@
 }
 .registrationLayout {
   display: grid;
-  grid-template-columns: 0.8fr 1.2fr;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
   align-items: stretch;
   border-radius: 18px;
   overflow: hidden;
@@ -963,6 +992,7 @@
   margin-top: 3px;
 }
 .backLink {
+  min-height: 44px;
   border: 0;
   background: none;
   color: #9cefff;
@@ -974,6 +1004,7 @@
   text-decoration: underline;
 }
 .registrationForm {
+  min-width: 0;
   padding: 40px 44px;
 }
 .formHeading {
@@ -1025,7 +1056,7 @@
   color: var(--ink);
   padding: 12px 14px;
   margin-top: 7px;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 400;
   transition:
     border-color 0.16s,
@@ -1058,7 +1089,7 @@
 }
 .choiceGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
   gap: 10px;
 }
 .choice,
@@ -1078,8 +1109,9 @@
 .choiceGrid input {
   accent-color: var(--teal);
   margin: 0;
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 .choiceGrid svg {
   color: #8ea7b0;
@@ -1095,7 +1127,7 @@
 }
 .choiceGrid small {
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   margin-top: 2px;
   color: #687f8b;
 }
@@ -1119,11 +1151,12 @@
 }
 .metricGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 17px;
   margin-bottom: 22px;
 }
 .metric {
+  min-width: 0;
   border: 1px solid var(--line);
   background: #fff;
   border-radius: 13px;
@@ -1180,10 +1213,11 @@
 }
 .statsGrid {
   display: grid;
-  grid-template-columns: 0.8fr 1.2fr;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
   gap: 22px;
 }
 .statsCard {
+  min-width: 0;
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 13px;
@@ -1238,6 +1272,7 @@
   margin-top: 2px;
 }
 .chartLegend {
+  flex-wrap: wrap;
   display: flex;
   justify-content: center;
   gap: 22px;
@@ -1247,7 +1282,7 @@
   align-items: center;
   gap: 6px;
   color: #8496a0;
-  font-size: 10px;
+  font-size: 12px;
 }
 .chartLegend i {
   width: 7px;
@@ -1271,6 +1306,7 @@
   padding-right: 4px;
 }
 .barLabel {
+  overflow-wrap: anywhere;
   display: flex;
   justify-content: space-between;
   gap: 18px;
@@ -1323,15 +1359,25 @@
   font-size: 12px;
 }
 .dialog {
+  position: fixed;
+  top: calc(
+    var(--dialog-viewport-top, 0px) + var(--dialog-viewport-height, 100dvh) / 2
+  );
+  bottom: auto;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
   border: 1px solid #e3ecee;
   background: linear-gradient(155deg, #edf6ff, #fff 40%);
   color: var(--ink);
   border-radius: 22px;
   padding: 32px;
-  width: min(460px, calc(100vw - 32px));
-  max-height: calc(100dvh - 48px);
-  margin: auto;
+  width: min(480px, calc(100% - 24px));
+  max-height: calc(var(--dialog-viewport-height, 100dvh) - 24px);
+  margin: 0 auto;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-block: 16px;
   box-shadow: 0 25px 100px #08273840;
 }
 .dialog::backdrop {
@@ -1380,6 +1426,7 @@
   margin: 23px 0;
 }
 .dialogGuest strong {
+  overflow-wrap: anywhere;
   display: block;
   font-size: 14px;
   color: var(--navy);
@@ -1390,9 +1437,12 @@
   color: #627b94;
   margin-top: 2px;
 }
+.dialogGuest > div {
+  min-width: 0;
+}
 .field input.largeTicketInput {
   min-height: 64px;
-  font-family: var(--font-geist-mono), monospace;
+  font-family: var(--font-geist-mono, monospace), monospace;
   font-size: 26px;
   text-align: center;
   letter-spacing: 0.12em;
@@ -1411,9 +1461,10 @@
   background: transparent;
   display: block;
   width: 100%;
-  padding: 14px 0 0;
-  color: #95a3ab;
-  font-size: 11px !important;
+  padding: 12px 0;
+  min-height: 44px;
+  color: #657c92;
+  font-size: 14px !important;
 }
 .dialogCancel:hover {
   color: var(--navy);
@@ -1437,100 +1488,256 @@
   white-space: nowrap;
   border: 0;
 }
-@media (min-width: 1600px) {
-  .content {
-    padding-top: 30px;
-  }
-}
-@media (max-width: 1100px) {
+@media (max-width: 1180px) {
   .navbarInner {
-    padding-inline: 24px;
-    gap: 20px;
-  }
-  .content {
-    padding-inline: 24px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding-block: 14px;
   }
   .brand {
-    max-width: 420px;
+    max-width: none;
+  }
+  .brandLogo {
+    width: 144px;
+    height: 85px;
+  }
+  .menu {
+    width: 100%;
   }
   .menu button {
-    padding-inline: 11px;
-    font-size: 12px;
-    gap: 5px;
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+    padding: 11px 14px;
   }
-  .table th,
+  .tableScroll {
+    overflow: visible;
+    max-height: none;
+  }
+  .table {
+    display: block;
+    min-width: 0;
+  }
+  .table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    clip: rect(0, 0, 0, 0);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .table tbody {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    padding: 0 24px 24px;
+  }
+  .table tr {
+    display: block;
+    min-width: 0;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px;
+    background: #fff;
+  }
+  .table .pendingRow {
+    border-left: 4px solid #e9b44b;
+  }
+  .table .registeredRow {
+    border-left: 4px solid #19976b;
+  }
+  .pendingRow td:first-child,
+  .registeredRow td:first-child {
+    box-shadow: none;
+  }
   .table td {
-    padding-inline: 15px;
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 0 !important;
+    border: 0;
+    font-size: 14px;
   }
-  .table th:first-child,
+  .table td::before {
+    content: attr(data-label);
+    color: #657c92;
+    font-size: 13px;
+    flex-shrink: 0;
+    max-width: 45%;
+  }
   .table td:first-child {
-    padding-left: 24px;
+    padding-top: 0 !important;
+    margin-bottom: 8px;
   }
-  .table th:last-child,
+  .table td:first-child::before,
+  .table td:last-child::before {
+    display: none;
+  }
+  .doctorName {
+    min-width: 0;
+    font-size: 16px;
+    line-height: 1.5;
+  }
   .table td:last-child {
-    padding-right: 24px;
+    border-top: 1px solid #e1eaf3;
+    padding-top: 14px !important;
+    margin-top: 9px;
+    padding-bottom: 0 !important;
+    align-items: stretch;
+    flex-direction: column;
   }
-  .choiceGrid {
-    grid-template-columns: 1fr;
+  .table td > .ticketNumber {
+    min-width: 0;
+    max-width: 60%;
+    text-align: right;
+  }
+  .hospitalName {
+    max-width: 65%;
+    text-align: right;
+  }
+  .arrivalButton {
+    width: 100%;
+    min-height: 48px;
+    font-size: 14px !important;
+  }
+  .registeredActions {
+    align-items: stretch;
+  }
+  .undoButton {
+    min-height: 48px;
+    border: 1px solid #d6e4ef;
+    border-radius: 8px;
+    background: #fff;
+  }
+  .table tr:has(.emptyCell) {
+    grid-column: 1 / -1;
+    border: 0;
+    padding: 0;
+  }
+  .table .emptyCell {
+    display: block;
+    border: 0 !important;
+    padding: 0 !important;
+  }
+  .table .emptyCell::before {
+    display: none;
+  }
+  .registrationLayout {
+    grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+  }
+  .receptionInfo {
+    padding: 32px 28px;
   }
   .registrationForm {
     padding: 32px;
   }
+  .metricGrid {
+    gap: 14px;
+  }
+  .metric {
+    padding: 20px;
+  }
 }
-@media (max-width: 850px) {
+
+@media (max-width: 900px) {
+  .registrationLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .receptionInfo {
+    padding: 26px 32px;
+  }
+  .sectionIcon,
+  .receptionSteps {
+    display: none;
+  }
+  .receptionInfo h2 {
+    max-width: none;
+    font-size: 30px;
+    margin-bottom: 12px;
+  }
+  .receptionInfo > p:not(.eyebrow) {
+    max-width: 620px;
+    font-size: 14px;
+  }
+  .backLink {
+    margin-top: 8px;
+    font-size: 14px !important;
+  }
+  .registrationForm {
+    width: 100%;
+    max-width: 760px;
+    margin-inline: auto;
+  }
+  .metricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .statsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .statsCard {
+    padding: 24px;
+  }
   .welcomeSteps {
-    gap: 18px;
-    padding-inline: 24px;
+    gap: 20px;
+    padding-inline: 28px;
   }
   .welcomeSteps li {
     flex-direction: column;
     text-align: center;
   }
-  .navbarInner {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 20px;
-    padding-block: 20px 14px;
-  }
-  .brand {
-    max-width: none;
-  }
-  .menu {
-    align-self: stretch;
-  }
-  .menu button {
-    flex: 1;
-  }
-  .listHeading {
-    padding: 20px 24px;
-  }
   .searchArea {
-    padding-inline: 24px;
-  }
-  .registrationLayout {
-    grid-template-columns: 0.75fr 1fr;
-  }
-  .receptionInfo {
-    padding: 32px 25px;
-  }
-  .receptionInfo h2 {
-    font-size: 28px;
-  }
-  .registrationForm {
-    padding: 30px 24px;
-  }
-  .metricGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .statsGrid {
-    grid-template-columns: 1fr 1.1fr;
-    gap: 15px;
-  }
-  .statsCard {
-    padding: 23px;
+    gap: 16px;
   }
 }
-@media (max-width: 600px) {
+
+@media (max-width: 700px) {
+  .navbarInner {
+    gap: 12px;
+    padding-block: 12px;
+  }
+  .brand {
+    gap: 12px;
+  }
+  .brandLogo {
+    width: 116px;
+    height: 78px;
+    padding-right: 12px;
+  }
+  .brandHospital {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+  }
+  .brand h1 {
+    font-size: 11px;
+  }
+  .brand h1 strong {
+    font-size: clamp(18px, 4.4vw, 23px);
+  }
+  .menu {
+    gap: 3px;
+    padding: 4px;
+  }
+  .menu button {
+    min-height: 48px;
+    padding: 10px 6px;
+    font-size: 13px;
+    white-space: normal;
+    text-align: center;
+  }
+  .menu button svg {
+    display: none;
+  }
+  .content {
+    padding-top: 20px;
+  }
+  .syncStatus {
+    justify-content: flex-start;
+    font-size: 12px;
+  }
   .eventProgress {
     flex-wrap: wrap;
     gap: 12px;
@@ -1557,13 +1764,17 @@
     padding: 32px 22px;
   }
   .welcomePanel .listHeading h2 {
-    font-size: 31px;
+    font-size: clamp(28px, 6vw, 37px);
   }
   .welcomePanel .listHeading p:not(.welcomeEyebrow) {
-    font-size: 14px;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  .welcomeEyebrow {
+    font-size: 11px;
   }
   .welcomePanel .searchArea {
-    padding: 25px 19px 15px;
+    padding: 24px 20px 12px;
   }
   .welcomePanel .searchBox {
     min-height: 64px;
@@ -1573,72 +1784,26 @@
   }
   .welcomeSteps {
     grid-template-columns: 1fr;
-    padding: 14px 24px 28px;
     gap: 18px;
+    padding: 16px 24px 28px;
   }
   .welcomeSteps li {
     flex-direction: row;
     text-align: left;
   }
-  .confirmationContent {
-    padding: 38px 22px 25px;
-  }
-  .confirmationIcon {
-    width: 80px;
-    height: 80px;
-  }
-  .confirmationDescription {
-    font-size: 14px;
-  }
-  .navbarInner {
-    padding: 18px 16px 12px;
-  }
-  .brand {
-    gap: 11px;
-  }
-  .brandLogo {
-    width: 112px;
-    height: 78px;
-    padding-right: 9px;
-  }
-  .brandHospital {
-    font-size: 8px;
-  }
-  .brand h1 {
-    font-size: 10px;
-  }
-  .brand h1 strong {
-    font-size: 19px;
-  }
-  .menu {
-    padding: 4px;
-    gap: 2px;
-  }
-  .menu button {
-    font-size: 12px;
-    padding: 9px 7px;
-    gap: 5px;
-    min-height: 46px;
-  }
-  .menu button svg {
-    display: none;
-  }
-  .content {
-    padding: 20px 13px 0;
-  }
   .listPanel {
-    border-radius: 13px;
+    border-radius: 14px;
   }
   .listHeading {
-    padding: 18px 19px;
-    gap: 14px;
+    padding: 20px;
+    gap: 12px;
     align-items: flex-start;
   }
   .listHeading h2 {
-    font-size: 24px;
+    font-size: 25px;
   }
   .listHeading p:not(.eyebrow) {
-    font-size: 12px;
+    font-size: 14px;
   }
   .headingActions {
     gap: 0;
@@ -1647,231 +1812,390 @@
     display: none;
   }
   .searchArea {
-    padding-inline: 19px;
     flex-direction: column;
     align-items: stretch;
     gap: 6px;
-    padding-bottom: 12px;
+    padding: 0 20px 16px;
   }
   .searchBox {
-    padding-inline: 12px;
-    gap: 9px;
-    min-height: 55px;
-  }
-  .searchBox svg {
-    width: 20px;
-    flex-shrink: 0;
+    min-height: 56px;
+    padding-inline: 14px;
+    gap: 10px;
   }
   .searchBox input {
     font-size: 16px;
   }
   .searchBox input::placeholder {
-    font-size: 12px;
+    font-size: 16px;
   }
   .listTools {
     justify-content: flex-end;
   }
   .listTools .textButton {
-    font-size: 11px !important;
-    min-height: 35px;
-  }
-  .tableScroll {
-    overflow: visible;
-    max-height: none;
-  }
-  .table {
-    display: block;
-    min-width: 0;
-  }
-  .table thead {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    clip: rect(0, 0, 0, 0);
-    overflow: hidden;
-    white-space: nowrap;
+    font-size: 13px !important;
   }
   .table tbody {
-    display: block;
-    padding: 0 19px 5px;
-  }
-  .table tr {
-    display: block;
-    border: 1px solid var(--line);
-    border-radius: 11px;
-    margin-bottom: 13px;
-    padding: 16px;
-  }
-  .table .pendingRow {
-    border-left: 4px solid #e9b44b;
-  }
-  .table .registeredRow {
-    border-left: 4px solid #19976b;
-  }
-  .pendingRow td:first-child,
-  .registeredRow td:first-child {
-    box-shadow: none;
-  }
-  .table td {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 7px 0 !important;
-    border: 0;
-    font-size: 12px;
-  }
-  .table td::before {
-    content: attr(data-label);
-    color: #657c92;
-    font-size: 12px;
-  }
-  .table td:first-child {
-    padding-top: 0 !important;
-    margin-bottom: 8px;
-  }
-  .table td:first-child::before {
-    display: none;
-  }
-  .doctorName {
-    font-size: 14px;
-  }
-  .table td:last-child {
-    border-top: 1px solid #edf1f3;
-    padding-top: 13px !important;
-    margin-top: 7px;
-    padding-bottom: 0 !important;
-  }
-  .arrivalButton {
-    min-height: 43px;
-    padding-inline: 14px;
-    font-size: 12px !important;
-  }
-  .hospitalName {
-    text-align: right;
-  }
-  .registeredActions {
-    align-items: flex-end;
-  }
-  .undoButton {
-    min-height: 30px;
-  }
-  .table tr:has(.emptyCell) {
-    border: 0;
-  }
-  .table .emptyCell {
-    display: block;
-    border: 0 !important;
-  }
-  .table .emptyCell::before {
-    display: none;
-  }
-  .emptyState {
-    padding: 20px 2px;
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0 20px 20px;
   }
   .tableFooter {
-    padding: 15px 19px;
     flex-wrap: wrap;
-    font-size: 10px;
-    gap: 8px;
+    gap: 9px;
+    padding: 16px 20px;
+    font-size: 12px;
   }
-  .appFooter {
-    font-size: 8px;
-    padding: 20px 1px;
+  .confirmationContent {
+    padding: 38px 22px 26px;
   }
-  .registrationLayout {
-    display: flex;
-    flex-direction: column;
+  .confirmationIcon {
+    width: 80px;
+    height: 80px;
+  }
+  .confirmationDescription {
+    font-size: 15px;
+  }
+  .confirmationReturn .secondaryButton {
+    width: 100%;
+    max-width: 340px;
   }
   .receptionInfo {
     padding: 24px;
   }
-  .sectionIcon,
-  .receptionSteps {
-    display: none;
-  }
   .receptionInfo h2 {
-    font-size: 27px;
-    max-width: none;
-  }
-  .receptionInfo > p:not(.eyebrow) {
-    max-width: none;
-    font-size: 12px;
-  }
-  .backLink {
-    margin-top: 12px;
+    font-size: 28px;
   }
   .registrationForm {
-    padding: 27px 23px;
+    padding: 26px 24px;
   }
-  .choiceGrid {
-    grid-template-columns: 1fr 1fr;
+  .field {
+    font-size: 15px;
+  }
+  .formHeading p {
+    font-size: 13px;
+  }
+  .ticketChoice legend {
+    font-size: 14px;
   }
   .choice,
   .choiceSelected {
-    padding: 13px 9px;
-    gap: 7px;
+    min-height: 76px;
   }
-  .choiceGrid svg {
-    display: none;
-  }
-  .choiceGrid small {
-    font-size: 10px;
-  }
-  .field input,
-  .field select {
-    font-size: 16px;
+  .choiceGrid strong {
+    font-size: 14px;
   }
   .pageHeading {
-    align-items: flex-start;
-    gap: 15px;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+  }
+  .pageHeading > div {
+    min-width: 0;
+    flex: 1 1 230px;
   }
   .pageHeading h2 {
-    font-size: 25px;
+    font-size: 27px;
   }
   .pageHeading p:not(.eyebrow) {
-    font-size: 12px;
-  }
-  .pageHeading .secondaryButton {
-    font-size: 0 !important;
-    padding: 11px;
-    min-height: 40px;
-    gap: 0;
+    font-size: 14px;
   }
   .metricGrid {
-    gap: 11px;
+    gap: 12px;
   }
   .metric {
     padding: 18px;
   }
   .metric p {
-    font-size: 10px;
+    font-size: 13px;
   }
   .metric > strong {
-    font-size: 29px;
+    font-size: 30px;
   }
   .statsGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .statsCard {
     padding: 24px;
   }
+  .chartLegend {
+    gap: 14px;
+  }
+  .chartLegend > span {
+    font-size: 12px;
+  }
+  .barLabel {
+    font-size: 14px;
+  }
   .dialog {
-    padding: 25px;
+    padding: 24px;
     border-radius: 18px;
   }
   .dialog h2 {
-    font-size: 27px;
+    font-size: 28px;
+    line-height: 1.2;
   }
   .dialogDescription {
-    font-size: 14px;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .dialogGuest {
+    margin: 18px 0;
+    padding: 13px;
   }
   .message {
-    padding: 13px;
-    font-size: 12px;
-    gap: 9px;
+    padding: 14px;
+    font-size: 14px;
+    gap: 10px;
+  }
+  .message > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .message button {
+    min-width: 40px;
+    min-height: 40px;
+  }
+  .appFooter {
+    font-size: 11px;
+    padding-block: 22px;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 }
+
+@media (max-width: 400px) {
+  .brandLogo {
+    width: 92px;
+    height: 66px;
+    padding-right: 10px;
+  }
+  .brandHospital {
+    font-size: 8px;
+  }
+  .brand h1 {
+    font-size: 10px;
+  }
+  .menu button {
+    font-size: 12px;
+    padding: 9px 4px;
+  }
+  .welcomePanel .listHeading {
+    padding: 28px 18px;
+  }
+  .welcomePanel .listHeading h2 {
+    font-size: 28px;
+  }
+  .welcomePanel .searchArea {
+    padding-inline: 16px;
+  }
+  .welcomeSteps {
+    padding-inline: 18px;
+  }
+  .searchArea {
+    padding-inline: 16px;
+  }
+  .table tbody {
+    padding-inline: 14px;
+  }
+  .table tr {
+    padding: 15px;
+  }
+  .table td {
+    gap: 10px;
+  }
+  .table td::before {
+    font-size: 12px;
+  }
+  .doctorName {
+    font-size: 15px;
+  }
+  .registrationForm {
+    padding: 24px 18px;
+  }
+  .receptionInfo {
+    padding: 22px 18px;
+  }
+  .metric {
+    padding: 16px;
+  }
+  .metric p {
+    font-size: 12px;
+  }
+  .appFooter {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .dialog {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 700px) and (max-height: 740px) {
+  .navbarInner {
+    padding-block: 10px;
+    gap: 8px;
+  }
+  .brandLogo {
+    width: 88px;
+    height: 52px;
+  }
+  .brand h1 strong {
+    font-size: 18px;
+  }
+  .content {
+    padding-top: 16px;
+  }
+  .eventProgress {
+    padding: 12px;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .eventProgressIcon,
+  .eventProgressSummary > p,
+  .eventProgressBar > span {
+    display: none;
+  }
+  .eventProgressSummary strong {
+    font-size: 13px;
+  }
+  .eventProgressSummary span {
+    font-size: 11px;
+  }
+  .eventProgressBar progress {
+    height: 6px;
+  }
+  .welcomeEyebrow {
+    display: none;
+  }
+  .welcomePanel .listHeading {
+    padding: 20px 18px;
+  }
+  .welcomePanel .listHeading h2 {
+    font-size: 27px;
+  }
+  .welcomePanel .listHeading p:not(.welcomeEyebrow) {
+    margin-top: 10px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .welcomePanel .searchArea {
+    padding: 16px 16px 8px;
+  }
+  .welcomePanel .searchBox {
+    min-height: 60px;
+  }
+}
+@media (max-width: 599px) and (max-height: 599px) {
+  .welcomePanel .listHeading p {
+    display: none;
+  }
+  .welcomePanel .listHeading {
+    padding-block: 16px;
+  }
+}
+@media (max-height: 500px) and (min-width: 600px) {
+  .navbarInner {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    padding-block: 8px;
+    gap: 8px;
+  }
+  .brandLogo {
+    width: 88px;
+    height: 52px;
+  }
+  .brand {
+    flex: 1;
+    min-width: 240px;
+    gap: 10px;
+  }
+  .brandHospital {
+    font-size: 8px;
+  }
+  .brand h1 {
+    font-size: 10px;
+  }
+  .brand h1 strong {
+    font-size: 18px;
+  }
+  .menu {
+    flex: 1;
+    min-width: 260px;
+    width: auto;
+  }
+  .menu button {
+    font-size: 12px;
+    padding: 8px 5px;
+  }
+  .menu button svg {
+    display: none;
+  }
+  .content {
+    padding-top: 14px;
+  }
+  .eventProgress {
+    flex-wrap: nowrap;
+    padding: 10px 14px;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .eventProgressIcon,
+  .eventProgressSummary > p,
+  .eventProgressBar > span {
+    display: none;
+  }
+  .eventProgressSummary strong {
+    font-size: 13px;
+  }
+  .eventProgressBar {
+    width: 160px;
+  }
+  .welcomePanel .listHeading {
+    padding-block: 16px;
+  }
+  .welcomePanel .listHeading h2 {
+    font-size: 28px;
+  }
+  .welcomePanel .listHeading p {
+    display: none;
+  }
+  .welcomePanel .searchArea {
+    padding: 16px 22px 8px;
+  }
+  .welcomePanel .searchBox {
+    min-height: 56px;
+  }
+  .dialog {
+    padding: 18px 22px;
+  }
+  .dialogTop {
+    margin-bottom: 12px;
+  }
+}
+
+@media (pointer: coarse) {
+  .menu button,
+  .primaryButton,
+  .secondaryButton,
+  .arrivalButton,
+  .undoButton,
+  .dialogCancel,
+  .backLink,
+  .textButton {
+    min-height: 48px;
+  }
+  .iconButton {
+    min-width: 48px;
+    width: 48px;
+    min-height: 48px;
+    height: 48px;
+  }
+  .field input,
+  .field select {
+    min-height: 52px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .app *,
   .app *::before,

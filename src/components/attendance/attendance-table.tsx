@@ -208,10 +208,30 @@ export default function AttendanceTable({
       dialog.close();
     }
     if (!modal) return;
+    const viewport = window.visualViewport;
+    const fitDialog = () => {
+      dialog.style.setProperty(
+        "--dialog-viewport-height",
+        `${viewport?.height ?? window.innerHeight}px`,
+      );
+      dialog.style.setProperty(
+        "--dialog-viewport-top",
+        `${viewport?.offsetTop ?? 0}px`,
+      );
+    };
+    fitDialog();
+    viewport?.addEventListener("resize", fitDialog);
+    viewport?.addEventListener("scroll", fitDialog);
+    window.addEventListener("resize", fitDialog);
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = previousOverflow;
+      viewport?.removeEventListener("resize", fitDialog);
+      viewport?.removeEventListener("scroll", fitDialog);
+      window.removeEventListener("resize", fitDialog);
+      dialog.style.removeProperty("--dialog-viewport-height");
+      dialog.style.removeProperty("--dialog-viewport-top");
     };
   }, [modal]);
 
@@ -601,7 +621,7 @@ export default function AttendanceTable({
                   id="guest-search"
                   type="search"
                   aria-label="Buscar médico por nombre, apellidos, hospital o boleto"
-                  placeholder="Escribe tu nombre o apellidos para comenzar…"
+                  placeholder="Tu nombre o apellidos…"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   autoComplete="off"
@@ -654,7 +674,7 @@ export default function AttendanceTable({
             {isSearching && (
               <>
                 <div className={styles.tableScroll}>
-                  <table className={styles.table}>
+                  <table className={styles.table} role="table">
                     <caption className={styles.srOnly}>
                       Lista de médicos invitados y estado de asistencia
                     </caption>
@@ -990,6 +1010,11 @@ export default function AttendanceTable({
               <button
                 type="button"
                 className={styles.secondaryButton}
+                aria-label={
+                  refreshing
+                    ? "Actualizando estadísticas"
+                    : "Actualizar estadísticas"
+                }
                 disabled={refreshing}
                 onClick={() => void refreshGuests()}
               >
