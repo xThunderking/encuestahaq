@@ -1,4 +1,5 @@
 import { adminDb } from "@/lib/firebase-admin";
+import type { DocumentSnapshot } from "firebase-admin/firestore";
 
 export type AttendanceGuest = {
   id: string;
@@ -9,27 +10,31 @@ export type AttendanceGuest = {
   checkedInAt: string | null;
 };
 
+export function attendanceGuestsQuery() {
+  return adminDb.collection("medicalEventGuests").orderBy("doctorName");
+}
+
+export function serializeAttendanceGuest(
+  document: DocumentSnapshot,
+): AttendanceGuest {
+  const data = document.data() ?? {};
+  const checkedInAt = data.checkedInAt;
+
+  return {
+    id: document.id,
+    doctorName: String(data.doctorName ?? ""),
+    hospital: String(data.hospital ?? ""),
+    hasTicket: data.hasTicket === true,
+    ticketNumber:
+      typeof data.ticketNumber === "string" ? data.ticketNumber : null,
+    checkedInAt:
+      checkedInAt && typeof checkedInAt.toDate === "function"
+        ? checkedInAt.toDate().toISOString()
+        : null,
+  };
+}
+
 export async function getAttendanceGuests(): Promise<AttendanceGuest[]> {
-  const snapshot = await adminDb
-    .collection("medicalEventGuests")
-    .orderBy("doctorName")
-    .get();
-
-  return snapshot.docs.map((document) => {
-    const data = document.data();
-    const checkedInAt = data.checkedInAt;
-
-    return {
-      id: document.id,
-      doctorName: String(data.doctorName ?? ""),
-      hospital: String(data.hospital ?? ""),
-      hasTicket: data.hasTicket === true,
-      ticketNumber:
-        typeof data.ticketNumber === "string" ? data.ticketNumber : null,
-      checkedInAt:
-        checkedInAt && typeof checkedInAt.toDate === "function"
-          ? checkedInAt.toDate().toISOString()
-          : null,
-    };
-  });
+  const snapshot = await attendanceGuestsQuery().get();
+  return snapshot.docs.map(serializeAttendanceGuest);
 }

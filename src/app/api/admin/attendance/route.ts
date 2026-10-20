@@ -1,20 +1,13 @@
-import { cookies } from "next/headers";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase-admin";
-import {
-  ADMIN_SESSION_COOKIE,
-  verifyAdminSessionToken,
-} from "@/lib/security/admin-session";
 import {
   attendanceActionSchema,
   attendanceGuestSchema,
 } from "@/modules/attendance/schema";
-import { getAttendanceGuests } from "@/modules/attendance/get-attendance-guests";
-
-async function isAuthenticated() {
-  const token = (await cookies()).get(ADMIN_SESSION_COOKIE)?.value;
-  return verifyAdminSessionToken(token);
-}
+import {
+  getAttendanceGuests,
+  serializeAttendanceGuest,
+} from "@/modules/attendance/get-attendance-guests";
 
 function validateOrigin(request: Request) {
   const origin = request.headers.get("origin");
@@ -22,10 +15,6 @@ function validateOrigin(request: Request) {
 }
 
 export async function GET() {
-  if (!(await isAuthenticated())) {
-    return Response.json({ error: "No autorizado." }, { status: 401 });
-  }
-
   try {
     const guests = await getAttendanceGuests();
     return Response.json(guests, {
@@ -41,9 +30,6 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  if (!(await isAuthenticated())) {
-    return Response.json({ error: "No autorizado." }, { status: 401 });
-  }
   if (!validateOrigin(request)) {
     return Response.json({ error: "Origen no permitido." }, { status: 403 });
   }
@@ -81,9 +67,6 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  if (!(await isAuthenticated())) {
-    return Response.json({ error: "No autorizado." }, { status: 401 });
-  }
   if (!validateOrigin(request)) {
     return Response.json({ error: "Origen no permitido." }, { status: 403 });
   }
@@ -104,17 +87,51 @@ export async function PATCH(request: Request) {
     const reference = adminDb
       .collection("medicalEventGuests")
       .doc(result.data.id);
-    const document = await reference.get();
-    if (!document.exists) {
-      return Response.json({ error: "Invitado no encontrado." }, { status: 404 });
-    }
-
-    await reference.update({
-      checkedInAt:
-        result.data.action === "check-in" ? FieldValue.serverTimestamp() : null,
-      updatedAt: FieldValue.serverTimestamp(),
+    const action = result.data;
+    const outcome = await adminDb.runTransaction(async (transaction) => {
+      const document = await transaction.get(reference);
+      if (!document.exists)
+        return { status: 404, error: "Invitado no encontrado." };
+      const guest = document.data();
+      if (action.action === "check-in") {
+        // Concurrent attempts retry against the latest document and preserve the first ticket.
+        if (guest?.checkedInAt)
+          return { status: 200, registered: true, alreadyRegistered: true };
+        const ticketNumber =
+          guest?.hasTicket === true ? action.ticketNumber?.trim() : null;
+        if (guest?.hasTicket === true && !ticketNumber) {
+          return {
+            status: 400,
+            error: "Ingresa el número de boleto para registrar la asistencia.",
+          };
+        }
+        transaction.update(reference, {
+          checkedInAt: FieldValue.serverTimestamp(),
+          ...(guest?.hasTicket === true ? { ticketNumber } : {}),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        return { status: 200, registered: true, alreadyRegistered: false };
+      }
+      if (guest?.checkedInAt) {
+        if (
+          serializeAttendanceGuest(document).checkedInAt !==
+          action.expectedCheckedInAt
+        ) {
+          return {
+            status: 409,
+            error:
+              "El registro cambió en otro equipo. Cierra esta ventana y revisa la asistencia antes de deshacerla.",
+          };
+        }
+        transaction.update(reference, {
+          checkedInAt: null,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      }
+      return { status: 200, registered: false };
     });
-    return Response.json({ registered: result.data.action === "check-in" });
+    const { status, ...body } = outcome;
+    return Response.json(body, { status });
   } catch (error) {
     console.error("Unable to update medical event attendance", error);
     return Response.json(

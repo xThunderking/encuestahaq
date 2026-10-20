@@ -1,276 +1,1199 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import {
+  type CSSProperties,
+  type FormEvent,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { AttendanceGuest } from "@/modules/attendance/get-attendance-guests";
+import Image from "next/image";
+import styles from "./attendance.module.css";
+import { useLiveAttendance } from "./use-live-attendance";
 
-type Props = { initialGuests: AttendanceGuest[] };
+type View = "table" | "register" | "stats";
+type Modal = { kind: "ticket" | "undo"; guest: AttendanceGuest } | null;
+type ArrivalConfirmation = { doctorName: string; alreadyRegistered: boolean };
+const WELCOME_RETURN_DELAY_MS = 5_000;
+type IconName =
+  | "search"
+  | "list"
+  | "person"
+  | "chart"
+  | "ticket"
+  | "check"
+  | "arrow"
+  | "close"
+  | "refresh"
+  | "clock"
+  | "hospital";
 
-const dateFormatter = new Intl.DateTimeFormat("es-MX", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "America/Mexico_City",
-});
+function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
+  const paths: Record<IconName, ReactNode> = {
+    search: (
+      <>
+        <circle cx="10.8" cy="10.8" r="6.8" />
+        <path d="m16 16 4.5 4.5" />
+      </>
+    ),
+    list: (
+      <>
+        <rect x="4" y="3" width="16" height="18" rx="3" />
+        <path d="M8 8h8M8 12h8M8 16h5" />
+      </>
+    ),
+    person: (
+      <>
+        <circle cx="10" cy="7" r="4" />
+        <path d="M3 21v-2a7 7 0 0 1 14 0v2M20 8v6m-3-3h6" />
+      </>
+    ),
+    chart: (
+      <>
+        <path d="M4 3v18h17M9 16v-5m5 5V6m5 10v-7" />
+      </>
+    ),
+    ticket: (
+      <>
+        <path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 0 0-4Z" />
+        <path d="M15 5v3m0 3v2m0 3v3" />
+      </>
+    ),
+    check: <path d="m5 12 4 4L19 6" />,
+    clock: (
+      <>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7v5l3 2" />
+      </>
+    ),
+    arrow: <path d="M4 12h16m-6-6 6 6-6 6" />,
+    close: <path d="m6 6 12 12M18 6 6 18" />,
+    refresh: (
+      <>
+        <path d="M20 7v5h-5M4 17v-5h5" />
+        <path d="M6.1 7a7 7 0 0 1 11.6-2L20 8M4 16l2.3 3A7 7 0 0 0 18 17" />
+      </>
+    ),
+    hospital: (
+      <>
+        <path d="M5 21V5h14v16M9 21v-5h6v5M12 7v6m-3-3h6M3 21h18" />
+      </>
+    ),
+  };
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {paths[name]}
+    </svg>
+  );
+}
 
-const inputClass =
-  "mt-1 block min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-sky-700 focus:ring-2 focus:ring-sky-700/20";
+function normalize(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("es-MX")
+    .trim();
+}
 
-export default function AttendanceTable({ initialGuests }: Props) {
-  const router = useRouter();
-  const [guests, setGuests] = useState(initialGuests);
-  const [hasTicket, setHasTicket] = useState(false);
+function initials(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
+export default function AttendanceTable({
+  initialGuests,
+}: {
+  initialGuests: AttendanceGuest[];
+}) {
+  const { guests, refreshing, syncStatus, refresh, rememberGuest } =
+    useLiveAttendance(initialGuests);
+  const [view, setView] = useState<View>("table");
   const [query, setQuery] = useState("");
+  const [draftName, setDraftName] = useState("");
+  const [hasTicket, setHasTicket] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [modal, setModal] = useState<Modal>(null);
+  const [ticketNumber, setTicketNumber] = useState("");
+  const [modalError, setModalError] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [arrivalConfirmation, setArrivalConfirmation] =
+    useState<ArrivalConfirmation | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const ticketInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const confirmationHeadingRef = useRef<HTMLHeadingElement>(null);
+  const isSearching = query.trim().length > 0;
 
-  useEffect(() => setGuests(initialGuests), [initialGuests]);
-
-  const checkedInCount = guests.filter((guest) => guest.checkedInAt).length;
+  const registeredCount = guests.filter((guest) => guest.checkedInAt).length;
+  const ticketCount = guests.filter((guest) => guest.hasTicket).length;
+  const pendingCount = guests.length - registeredCount;
+  const attendancePercent = guests.length
+    ? Math.round((registeredCount / guests.length) * 100)
+    : 0;
+  const hospitals = useMemo(
+    () =>
+      [...new Set(guests.map((guest) => guest.hospital))].sort((a, b) =>
+        a.localeCompare(b, "es"),
+      ),
+    [guests],
+  );
+  const hospitalStats = useMemo(
+    () =>
+      hospitals
+        .map((hospital) => {
+          const invited = guests.filter((guest) => guest.hospital === hospital);
+          return {
+            name: hospital,
+            total: invited.length,
+            registered: invited.filter((guest) => guest.checkedInAt).length,
+          };
+        })
+        .sort((a, b) => b.total - a.total),
+    [guests, hospitals],
+  );
   const filteredGuests = useMemo(() => {
-    const normalizedQuery = query.trim().toLocaleLowerCase("es-MX");
-    if (!normalizedQuery) return guests;
-    return guests.filter((guest) =>
-      [guest.doctorName, guest.hospital, guest.ticketNumber ?? ""]
-        .join(" ")
-        .toLocaleLowerCase("es-MX")
-        .includes(normalizedQuery),
-    );
+    const terms = normalize(query).split(/\s+/).filter(Boolean);
+    if (!terms.length) return [];
+    return guests
+      .filter((guest) => {
+        const text = normalize(
+          `${guest.doctorName} ${guest.hospital} ${guest.ticketNumber ?? ""}`,
+        );
+        return terms.every((term) => text.includes(term));
+      })
+      .sort((a, b) => a.doctorName.localeCompare(b.doctorName, "es"));
   }, [guests, query]);
+
+  async function refreshGuests(silent = false) {
+    try {
+      await refresh();
+    } catch (caught) {
+      if (!silent)
+        setError(
+          caught instanceof Error
+            ? caught.message
+            : "No pudimos actualizar la lista.",
+        );
+    }
+  }
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (modal && !dialog.open) {
+      dialog.showModal();
+      if (modal.kind === "ticket") ticketInputRef.current?.focus();
+    } else if (!modal && dialog.open) {
+      dialog.close();
+    }
+    if (!modal) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [modal]);
+
+  useEffect(() => {
+    if (!arrivalConfirmation) return;
+    const timer = window.setTimeout(() => {
+      setArrivalConfirmation(null);
+      setQuery("");
+      setNotice("");
+    }, WELCOME_RETURN_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [arrivalConfirmation]);
+
+  useEffect(() => {
+    if (view !== "table" || modal) return;
+    if (arrivalConfirmation)
+      confirmationHeadingRef.current?.focus({ preventScroll: true });
+    else searchInputRef.current?.focus({ preventScroll: true });
+  }, [view, arrivalConfirmation, modal]);
+
+  function navigate(next: View) {
+    setView(next);
+    setArrivalConfirmation(null);
+    if (next === "table") setQuery("");
+    setError("");
+    setNotice("");
+  }
+
+  function openReception() {
+    setDraftName(query.trim());
+    navigate("register");
+  }
+
+  async function updateAttendance(
+    guest: AttendanceGuest,
+    action: "check-in" | "undo",
+    number?: string,
+  ) {
+    setError("");
+    setModalError("");
+    setNotice("");
+    setPendingId(guest.id);
+    try {
+      const response = await fetch("/api/admin/attendance", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: guest.id,
+          action,
+          ticketNumber: number,
+          ...(action === "undo"
+            ? { expectedCheckedInAt: guest.checkedInAt }
+            : {}),
+        }),
+      });
+      const result = (await response.json()) as {
+        error?: string;
+        alreadyRegistered?: boolean;
+      };
+      if (!response.ok)
+        throw new Error(
+          result.error ??
+            "No pudimos guardar la asistencia. Inténtalo nuevamente.",
+        );
+      void refreshGuests(true);
+      if (action === "check-in") {
+        setArrivalConfirmation({
+          doctorName: guest.doctorName,
+          alreadyRegistered: result.alreadyRegistered === true,
+        });
+        setQuery("");
+        setView("table");
+      } else {
+        setNotice(
+          `Se canceló el registro de asistencia de ${guest.doctorName}.`,
+        );
+      }
+      return true;
+    } catch (caught) {
+      const message =
+        caught instanceof Error
+          ? caught.message
+          : "No pudimos guardar el registro.";
+      if (modal) setModalError(message);
+      else setError(message);
+      return false;
+    } finally {
+      setPendingId(null);
+    }
+  }
+
+  function registerArrival(guest: AttendanceGuest) {
+    setError("");
+    setNotice("");
+    setModalError("");
+    if (guest.hasTicket) {
+      setTicketNumber(guest.ticketNumber ?? "");
+      setModal({ kind: "ticket", guest });
+    } else {
+      void updateAttendance(guest, "check-in");
+    }
+  }
 
   async function addGuest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const submitter = (event.nativeEvent as SubmitEvent)
+      .submitter as HTMLButtonElement | null;
+    const continueToArrival = submitter?.value !== "list-only";
     setError("");
     setNotice("");
     setSaving(true);
-
-    const form = event.currentTarget;
-    const formData = new FormData(form);
     const payload = {
-      doctorName: formData.get("doctorName"),
-      hospital: formData.get("hospital"),
+      doctorName: String(data.get("doctorName") ?? "").trim(),
+      hospital: String(data.get("hospital") ?? "").trim(),
       hasTicket,
-      ticketNumber: hasTicket ? formData.get("ticketNumber") : "",
+      ticketNumber: hasTicket
+        ? String(data.get("ticketNumber") ?? "").trim()
+        : "",
     };
-
     try {
       const response = await fetch("/api/admin/attendance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const result = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(result.error ?? "No fue posible guardar.");
-
+      const result = (await response.json()) as { id?: string; error?: string };
+      if (!response.ok || !result.id)
+        throw new Error(
+          result.error ??
+            "No pudimos agregar al médico. Revisa los datos e inténtalo nuevamente.",
+        );
+      const guest: AttendanceGuest = {
+        ...payload,
+        id: result.id,
+        ticketNumber: payload.ticketNumber || null,
+        checkedInAt: null,
+      };
+      rememberGuest(guest);
+      void refreshGuests(true);
       form.reset();
-      setHasTicket(false);
-      setNotice("Invitado agregado a la lista.");
-      router.refresh();
+      setDraftName("");
+      setHasTicket(true);
+      setQuery("");
+      setView("table");
+      if (continueToArrival) registerArrival(guest);
+      else
+        setNotice(
+          `${guest.doctorName} se agregó a la lista. Su asistencia está pendiente de confirmar.`,
+        );
     } catch (caught) {
       setError(
         caught instanceof Error
           ? caught.message
-          : "No fue posible agregar al invitado.",
+          : "No pudimos agregar al médico.",
       );
     } finally {
       setSaving(false);
     }
   }
 
-  async function updateAttendance(guest: AttendanceGuest) {
-    const action = guest.checkedInAt ? "undo" : "check-in";
-    setError("");
-    setNotice("");
-    setPendingId(guest.id);
-
-    try {
-      const response = await fetch("/api/admin/attendance", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: guest.id, action }),
-      });
-      const result = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(result.error ?? "No fue posible actualizar.");
-
-      setNotice(
-        action === "check-in" ? "Asistencia registrada." : "Registro deshecho.",
-      );
-      router.refresh();
-    } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "No fue posible actualizar el registro.",
-      );
-    } finally {
-      setPendingId(null);
+  async function confirmModal(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!modal) return;
+    const number = ticketNumber.trim();
+    if (modal.kind === "ticket" && !number) {
+      setModalError("Escribe el número que aparece en tu boleto.");
+      return;
     }
+    const saved = await updateAttendance(
+      modal.guest,
+      modal.kind === "ticket" ? "check-in" : "undo",
+      modal.kind === "ticket" ? number : undefined,
+    );
+    if (saved) setModal(null);
   }
 
-  return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <section className="mb-6 grid gap-4 sm:grid-cols-3" aria-label="Resumen">
-        <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm text-slate-600">Invitados en la lista</p>
-          <p className="mt-1 text-3xl font-semibold text-slate-900">{guests.length}</p>
-        </article>
-        <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm text-slate-600">Asistencias registradas</p>
-          <p className="mt-1 text-3xl font-semibold text-sky-800">{checkedInCount}</p>
-        </article>
-        <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm text-slate-600">Pendientes de registro</p>
-          <p className="mt-1 text-3xl font-semibold text-slate-900">
-            {guests.length - checkedInCount}
-          </p>
-        </article>
-      </section>
+  const modalBusy = modal ? pendingId === modal.guest.id : false;
 
-      <section className="mb-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <h2 className="text-lg font-semibold text-slate-900">Agregar invitado</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Captura los datos del médico. El número de boleto solo se solicita si tiene boleto.
-        </p>
-        <form className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4" onSubmit={addGuest}>
-          <label className="text-sm font-medium text-slate-700">
-            Nombre del médico
-            <input
-              className={inputClass}
-              name="doctorName"
-              autoComplete="name"
-              maxLength={120}
-              required
+  return (
+    <div className={styles.app}>
+      <header className={styles.navbar}>
+        <div className={styles.navbarInner}>
+          <div className={styles.brand}>
+            <Image
+              className={styles.brandLogo}
+              src="/hospital-angeles-queretaro.png"
+              alt="Hospital Ángeles Querétaro"
+              width={190}
+              height={112}
+              preload
             />
-          </label>
-          <label className="text-sm font-medium text-slate-700">
-            Hospital
-            <input
-              className={inputClass}
-              name="hospital"
-              maxLength={120}
-              required
-            />
-          </label>
-          <div>
-            <span className="text-sm font-medium text-slate-700">Boleto</span>
-            <label className="mt-1 flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-slate-300 px-3 text-sm text-slate-800">
-              <input
-                className="size-4 accent-sky-800"
-                type="checkbox"
-                checked={hasTicket}
-                onChange={(event) => setHasTicket(event.target.checked)}
-              />
-              Sí, tiene boleto
-            </label>
-          </div>
-          {hasTicket ? (
-            <label className="text-sm font-medium text-slate-700">
-              No. de boleto
-              <input
-                className={inputClass}
-                name="ticketNumber"
-                maxLength={40}
-                required
-              />
-            </label>
-          ) : (
-            <div className="flex items-end">
-              <p className="pb-3 text-sm text-slate-500">
-                Sin boleto: el número se guarda vacío.
-              </p>
+            <div>
+              <p className={styles.brandHospital}>Hospital Ángeles Querétaro</p>
+              <h1>
+                Lista de invitados desayuno evento{" "}
+                <strong>Día del Médico</strong>
+              </h1>
             </div>
-          )}
-          <div className="md:col-span-2 xl:col-span-4">
-            {error && <p className="mb-3 text-sm text-red-700" role="alert">{error}</p>}
-            {notice && <p className="mb-3 text-sm text-emerald-700" role="status">{notice}</p>}
+          </div>
+          <nav className={styles.menu} aria-label="Navegación principal">
+            {(
+              [
+                ["table", "list", "Menú principal"],
+                ["register", "person", "Registro doctor"],
+                ["stats", "chart", "Estadísticas"],
+              ] as const
+            ).map(([destination, icon, label]) => (
+              <button
+                key={destination}
+                type="button"
+                className={view === destination ? styles.menuActive : ""}
+                aria-current={view === destination ? "page" : undefined}
+                onClick={() => navigate(destination)}
+              >
+                <Icon name={icon} size={18} />
+                <span>{label}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
+      </header>
+
+      <div className={styles.content}>
+        <div
+          className={styles.syncStatus}
+          data-state={syncStatus}
+          role="status"
+        >
+          <i aria-hidden="true" />
+          <span>
+            {syncStatus === "live"
+              ? "Conectado · Actualización en tiempo real"
+              : syncStatus === "offline"
+                ? "Sin conexión. Conecta este equipo a internet."
+                : syncStatus === "connecting"
+                  ? "Conectando la lista en tiempo real…"
+                  : "Reconectando… Los datos pueden estar desactualizados."}
+          </span>
+        </div>
+        <section
+          className={styles.eventProgress}
+          aria-label="Progreso del evento"
+        >
+          <span className={styles.eventProgressIcon} aria-hidden="true">
+            <Icon name="chart" size={24} />
+          </span>
+          <div className={styles.eventProgressSummary}>
+            <p>Avance del evento</p>
+            <div aria-live="polite" aria-atomic="true">
+              <strong>
+                {registeredCount} de {guests.length} médicos registrados
+              </strong>
+              <span>{pendingCount} pendientes</span>
+            </div>
+          </div>
+          <div className={styles.eventProgressBar}>
+            <span>{attendancePercent}% de asistencia</span>
+            <progress
+              value={registeredCount}
+              max={Math.max(guests.length, 1)}
+              aria-label="Asistencia confirmada"
+            />
+          </div>
+        </section>
+        {error && (
+          <div className={`${styles.message} ${styles.error}`} role="alert">
+            <span>{error}</span>
             <button
-              className="min-h-11 rounded-lg bg-sky-800 px-5 py-2.5 font-semibold text-white hover:bg-sky-900 disabled:cursor-wait disabled:opacity-60"
-              type="submit"
-              disabled={saving}
+              type="button"
+              aria-label="Cerrar aviso"
+              onClick={() => setError("")}
             >
-              {saving ? "Guardando…" : "Agregar a la lista"}
+              <Icon name="close" size={18} />
             </button>
           </div>
-        </form>
-      </section>
-
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-3 border-b border-slate-200 p-5 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">Invitados</h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Marca el registro cuando el médico llegue al evento.
-            </p>
+        )}
+        {notice && (
+          <div className={`${styles.message} ${styles.success}`} role="status">
+            <Icon name="check" />
+            <span>{notice}</span>
+            <button
+              type="button"
+              aria-label="Cerrar aviso"
+              onClick={() => setNotice("")}
+            >
+              <Icon name="close" size={18} />
+            </button>
           </div>
-          <label className="w-full text-sm font-medium text-slate-700 sm:max-w-sm">
-            Buscar por médico, hospital o boleto
-            <input
-              className={inputClass}
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-          </label>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-[950px] w-full border-collapse text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
-              <tr>
-                <th className="px-4 py-3 font-semibold">Nombre del médico</th>
-                <th className="px-4 py-3 font-semibold">Hospital</th>
-                <th className="px-4 py-3 font-semibold">Boleto</th>
-                <th className="px-4 py-3 font-semibold">No. de boleto</th>
-                <th className="px-4 py-3 font-semibold">Registro</th>
-                <th className="px-4 py-3 font-semibold">Hora y fecha de registro</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-800">
-              {filteredGuests.map((guest) => (
-                <tr key={guest.id} className="hover:bg-slate-50/80">
-                  <td className="px-4 py-3 font-medium">{guest.doctorName}</td>
-                  <td className="px-4 py-3">{guest.hospital}</td>
-                  <td className="px-4 py-3">{guest.hasTicket ? "Sí" : "No"}</td>
-                  <td className="px-4 py-3">{guest.hasTicket ? guest.ticketNumber : "—"}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`mr-2 inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${guest.checkedInAt ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"}`}
-                    >
-                      {guest.checkedInAt ? "Registrado" : "Pendiente"}
-                    </span>
-                    <button
-                      className={`min-h-9 rounded-md px-3 py-1.5 text-sm font-semibold disabled:cursor-wait disabled:opacity-60 ${guest.checkedInAt ? "border border-slate-300 bg-white text-slate-700 hover:bg-slate-100" : "bg-emerald-700 text-white hover:bg-emerald-800"}`}
-                      type="button"
-                      disabled={pendingId === guest.id}
-                      onClick={() => void updateAttendance(guest)}
-                    >
-                      {pendingId === guest.id
-                        ? "Guardando…"
-                        : guest.checkedInAt
-                          ? "Deshacer"
-                          : "Registrar"}
-                    </button>
-                  </td>
-                  <td className="px-4 py-3">
-                    {guest.checkedInAt
-                      ? dateFormatter.format(new Date(guest.checkedInAt))
-                      : "Pendiente"}
-                  </td>
-                </tr>
-              ))}
-              {filteredGuests.length === 0 && (
-                <tr>
-                  <td className="px-4 py-10 text-center text-slate-500" colSpan={6}>
-                    {guests.length === 0
-                      ? "Todavía no hay invitados. Agrégalos con el formulario."
-                      : "No hay invitados que coincidan con la búsqueda."}
-                  </td>
-                </tr>
+        )}
+
+        {view === "table" && arrivalConfirmation && (
+          <section
+            className={styles.confirmationPanel}
+            aria-labelledby="arrival-confirmed-title"
+          >
+            <div className={styles.confirmationContent} role="status">
+              <span className={styles.confirmationIcon} aria-hidden="true">
+                <Icon name="check" size={48} />
+              </span>
+              <p className={styles.eyebrow}>Asistencia registrada</p>
+              <h2
+                id="arrival-confirmed-title"
+                ref={confirmationHeadingRef}
+                tabIndex={-1}
+              >
+                {arrivalConfirmation.alreadyRegistered
+                  ? "Tu asistencia ya está registrada"
+                  : "¡Registro confirmado!"}
+              </h2>
+              <p className={styles.confirmationName}>
+                {arrivalConfirmation.doctorName}
+              </p>
+              <p className={styles.confirmationDescription}>
+                {arrivalConfirmation.alreadyRegistered
+                  ? "Tu registro original está confirmado. ¡Disfruta del evento!"
+                  : "Tu llegada se guardó correctamente. ¡Disfruta del desayuno y feliz Día del Médico!"}
+              </p>
+            </div>
+            <div className={styles.confirmationReturn}>
+              <p>
+                Volveremos a la bienvenida en 5 segundos para recibir al
+                siguiente médico.
+              </p>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => navigate("table")}
+              >
+                Volver a la bienvenida <Icon name="arrow" size={18} />
+              </button>
+            </div>
+            <div className={styles.returnProgress} aria-hidden="true" />
+          </section>
+        )}
+
+        {view === "table" && !arrivalConfirmation && (
+          <section
+            className={`${styles.listPanel} ${!isSearching ? styles.welcomePanel : ""}`}
+            aria-labelledby="guest-list-title"
+          >
+            <div className={styles.listHeading}>
+              <div>
+                {!isSearching && (
+                  <p className={styles.welcomeEyebrow}>
+                    Hospital Ángeles Querétaro
+                  </p>
+                )}
+                <h2 id="guest-list-title">
+                  {isSearching
+                    ? "Encuentra tu nombre"
+                    : "¡Bienvenido al Día del Médico!"}
+                </h2>
+                <p>
+                  {isSearching
+                    ? "Selecciona Registrar llegada junto a tu nombre y confirma tu boleto."
+                    : "Nos alegra recibirte. Busca tu nombre para registrar tu llegada y disfrutar del desayuno."}
+                </p>
+              </div>
+              {isSearching && (
+                <div className={styles.headingActions}>
+                  <span className={styles.invitedCount}>
+                    {filteredGuests.length}{" "}
+                    {filteredGuests.length === 1
+                      ? "coincidencia"
+                      : "coincidencias"}
+                  </span>
+                  <button
+                    type="button"
+                    className={styles.iconButton}
+                    aria-label="Actualizar lista de invitados"
+                    title="Actualizar lista"
+                    disabled={refreshing}
+                    onClick={() => void refreshGuests()}
+                  >
+                    <Icon name="refresh" />
+                  </button>
+                </div>
               )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+            </div>
+            <div className={styles.searchArea}>
+              <label className={styles.searchBox} htmlFor="guest-search">
+                <Icon name="search" size={24} />
+                <input
+                  ref={searchInputRef}
+                  id="guest-search"
+                  type="search"
+                  aria-label="Buscar médico por nombre, apellidos, hospital o boleto"
+                  placeholder="Escribe tu nombre o apellidos para comenzar…"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  autoComplete="off"
+                />
+              </label>
+              <div className={styles.listTools}>
+                <button
+                  type="button"
+                  className={styles.textButton}
+                  onClick={openReception}
+                >
+                  ¿No estás en la lista? <Icon name="arrow" size={16} />
+                </button>
+              </div>
+            </div>
+            {!isSearching && (
+              <ol
+                className={styles.welcomeSteps}
+                aria-label="Cómo registrar tu llegada"
+              >
+                <li>
+                  <span>
+                    <Icon name="search" size={22} />
+                  </span>
+                  <div>
+                    <strong>Busca tu nombre</strong>
+                    <p>Escribe tu nombre o apellidos</p>
+                  </div>
+                </li>
+                <li>
+                  <span>
+                    <Icon name="ticket" size={22} />
+                  </span>
+                  <div>
+                    <strong>Confirma tu llegada</strong>
+                    <p>Ten a la mano tu boleto</p>
+                  </div>
+                </li>
+                <li>
+                  <span>
+                    <Icon name="check" size={22} />
+                  </span>
+                  <div>
+                    <strong>¡Disfruta el evento!</strong>
+                    <p>Tu asistencia quedará registrada</p>
+                  </div>
+                </li>
+              </ol>
+            )}
+            {isSearching && (
+              <>
+                <div className={styles.tableScroll}>
+                  <table className={styles.table}>
+                    <caption className={styles.srOnly}>
+                      Lista de médicos invitados y estado de asistencia
+                    </caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Nombre del médico</th>
+                        <th scope="col">Hospital</th>
+                        <th scope="col">Boleto</th>
+                        <th scope="col">No. de boleto</th>
+                        <th scope="col">Estado</th>
+                        <th scope="col">Registro de asistencia</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredGuests.map((guest) => (
+                        <tr
+                          key={guest.id}
+                          className={
+                            guest.checkedInAt
+                              ? styles.registeredRow
+                              : styles.pendingRow
+                          }
+                        >
+                          <td data-label="Médico">
+                            <div className={styles.doctorCell}>
+                              <span className={styles.avatar}>
+                                {initials(guest.doctorName)}
+                              </span>
+                              <span className={styles.doctorName}>
+                                {guest.doctorName}
+                              </span>
+                            </div>
+                          </td>
+                          <td data-label="Hospital">
+                            <span
+                              className={styles.hospitalName}
+                              data-hospital={guest.hospital}
+                            >
+                              {guest.hospital}
+                            </span>
+                          </td>
+                          <td data-label="Boleto">
+                            <span
+                              className={
+                                guest.hasTicket
+                                  ? styles.ticketBadge
+                                  : styles.mutedBadge
+                              }
+                            >
+                              {guest.hasTicket && (
+                                <Icon name="ticket" size={14} />
+                              )}
+                              {guest.hasTicket ? "Con boleto" : "Sin boleto"}
+                            </span>
+                          </td>
+                          <td data-label="No. de boleto">
+                            <span className={styles.ticketNumber}>
+                              {guest.hasTicket && guest.ticketNumber
+                                ? guest.ticketNumber
+                                : "—"}
+                            </span>
+                          </td>
+                          <td data-label="Estado">
+                            <span
+                              className={`${styles.statusBadge} ${
+                                guest.checkedInAt
+                                  ? styles.registeredStatus
+                                  : styles.pendingStatus
+                              }`}
+                            >
+                              <Icon
+                                name={guest.checkedInAt ? "check" : "clock"}
+                                size={17}
+                              />
+                              {guest.checkedInAt ? "Registrado" : "Pendiente"}
+                            </span>
+                          </td>
+                          <td data-label="Registro">
+                            {guest.checkedInAt ? (
+                              <div className={styles.registeredActions}>
+                                <button
+                                  type="button"
+                                  className={styles.undoButton}
+                                  disabled={pendingId !== null}
+                                  onClick={() => {
+                                    setModalError("");
+                                    setModal({ kind: "undo", guest });
+                                  }}
+                                >
+                                  Deshacer registro
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                className={styles.arrivalButton}
+                                disabled={pendingId !== null}
+                                onClick={() => registerArrival(guest)}
+                              >
+                                {pendingId === guest.id
+                                  ? "Registrando…"
+                                  : "Registrar llegada"}
+                                <Icon name="arrow" size={16} />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                      {filteredGuests.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className={styles.emptyCell}>
+                            <div className={styles.emptyState}>
+                              <span className={styles.emptyIcon}>
+                                <Icon name="search" size={30} />
+                              </span>
+                              <h3>
+                                {query.trim()
+                                  ? "No encontramos coincidencias"
+                                  : "La lista está lista para recibir invitados"}
+                              </h3>
+                              <p>
+                                {query.trim()
+                                  ? "Prueba con tus apellidos o revisa la escritura. Si no apareces, una recepcionista puede agregarte."
+                                  : "Las recepcionistas pueden agregar a los médicos desde Registro doctor."}
+                              </p>
+                              <button
+                                type="button"
+                                className={styles.secondaryButton}
+                                onClick={openReception}
+                              >
+                                <Icon name="person" size={18} />
+                                Ir a Registro doctor
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <footer className={styles.tableFooter}>
+                  <span aria-live="polite">
+                    {query.trim()
+                      ? `${filteredGuests.length} de ${guests.length} invitados`
+                      : `${guests.length} invitados · ${registeredCount} registrados · ${pendingCount} pendientes`}
+                  </span>
+                  <span>
+                    <i />
+                    {syncStatus === "live"
+                      ? "Lista sincronizada en tiempo real"
+                      : "Esperando sincronización"}
+                  </span>
+                </footer>
+              </>
+            )}
+          </section>
+        )}
+
+        {view === "register" && (
+          <section
+            className={styles.registrationLayout}
+            aria-labelledby="registration-title"
+          >
+            <aside className={styles.receptionInfo}>
+              <span className={styles.sectionIcon}>
+                <Icon name="person" size={27} />
+              </span>
+              <p className={styles.eyebrow}>Módulo de recepción</p>
+              <h2 id="registration-title">Un lugar para cada médico.</h2>
+              <p>
+                Si el médico no aparece en la lista, agrega sus datos aquí y
+                continúa con el registro de su llegada.
+              </p>
+              <ol className={styles.receptionSteps}>
+                <li>
+                  <span>1</span>
+                  <div>
+                    <strong>Captura sus datos</strong>
+                    <p>Nombre completo y hospital de procedencia.</p>
+                  </div>
+                </li>
+                <li>
+                  <span>2</span>
+                  <div>
+                    <strong>Confirma si tiene boleto</strong>
+                    <p>El número se entrega en la entrada del evento.</p>
+                  </div>
+                </li>
+                <li>
+                  <span>3</span>
+                  <div>
+                    <strong>Registra su llegada</strong>
+                    <p>Guarda al médico y confirma su asistencia.</p>
+                  </div>
+                </li>
+              </ol>
+              <button
+                type="button"
+                className={styles.backLink}
+                onClick={() => navigate("table")}
+              >
+                ← Volver a la bienvenida
+              </button>
+            </aside>
+            <form className={styles.registrationForm} onSubmit={addGuest}>
+              <div className={styles.formHeading}>
+                <h3>Registro doctor</h3>
+                <p>
+                  Los campos con <span aria-hidden="true">*</span> son
+                  obligatorios.
+                </p>
+              </div>
+              <fieldset disabled={saving}>
+                <legend className={styles.srOnly}>Datos del médico</legend>
+                <label className={styles.field} htmlFor="doctor-name">
+                  Nombre completo del médico <span>*</span>
+                  <input
+                    id="doctor-name"
+                    name="doctorName"
+                    placeholder="Ej. María López Hernández"
+                    autoComplete="name"
+                    minLength={2}
+                    maxLength={120}
+                    required
+                    value={draftName}
+                    onChange={(event) => setDraftName(event.target.value)}
+                  />
+                </label>
+                <label className={styles.field} htmlFor="doctor-hospital">
+                  Hospital <span>*</span>
+                  <select
+                    id="doctor-hospital"
+                    name="hospital"
+                    required
+                    defaultValue=""
+                    autoComplete="organization"
+                  >
+                    <option value="" disabled>
+                      Selecciona un hospital
+                    </option>
+                    <option value="HAQ">HAQ</option>
+                    <option value="HACS">HACS</option>
+                  </select>
+                </label>
+                <fieldset className={styles.ticketChoice}>
+                  <legend>¿El médico tiene boleto?</legend>
+                  <div className={styles.choiceGrid}>
+                    <label
+                      className={
+                        hasTicket ? styles.choiceSelected : styles.choice
+                      }
+                    >
+                      <input
+                        type="radio"
+                        name="hasTicket"
+                        checked={hasTicket}
+                        onChange={() => setHasTicket(true)}
+                      />
+                      <Icon name="ticket" />
+                      <span>
+                        <strong>Sí, tiene boleto</strong>
+                        <small>Recibió uno en la entrada</small>
+                      </span>
+                    </label>
+                    <label
+                      className={
+                        !hasTicket ? styles.choiceSelected : styles.choice
+                      }
+                    >
+                      <input
+                        type="radio"
+                        name="hasTicket"
+                        checked={!hasTicket}
+                        onChange={() => setHasTicket(false)}
+                      />
+                      <Icon name="person" />
+                      <span>
+                        <strong>No tiene boleto</strong>
+                        <small>Registrar sin número</small>
+                      </span>
+                    </label>
+                  </div>
+                </fieldset>
+                {hasTicket && (
+                  <label className={styles.field} htmlFor="doctor-ticket">
+                    No. de boleto <em>Opcional</em>
+                    <input
+                      id="doctor-ticket"
+                      name="ticketNumber"
+                      placeholder="Ej. 0248"
+                      maxLength={40}
+                      autoComplete="off"
+                    />
+                    <small>
+                      Puedes capturarlo ahora o al confirmar la llegada.
+                    </small>
+                  </label>
+                )}
+              </fieldset>
+              <div className={styles.formActions}>
+                <button
+                  type="submit"
+                  name="action"
+                  value="check-in"
+                  className={styles.primaryButton}
+                  disabled={saving}
+                >
+                  {saving ? "Guardando médico…" : "Agregar y registrar llegada"}
+                  <Icon name="arrow" size={18} />
+                </button>
+                <button
+                  type="submit"
+                  name="action"
+                  value="list-only"
+                  className={styles.textButton}
+                  disabled={saving}
+                >
+                  Solo agregar a la lista
+                </button>
+              </div>
+            </form>
+          </section>
+        )}
+
+        {view === "stats" && (
+          <section aria-labelledby="stats-title" className={styles.statsPage}>
+            <div className={styles.pageHeading}>
+              <div>
+                <p className={styles.eyebrow}>El evento en números</p>
+                <h2 id="stats-title">Estadísticas de asistencia</h2>
+                <p>Consulta el avance del registro de los médicos invitados.</p>
+              </div>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                disabled={refreshing}
+                onClick={() => void refreshGuests()}
+              >
+                <Icon name="refresh" size={17} />
+                {refreshing ? "Actualizando…" : "Actualizar"}
+              </button>
+            </div>
+            <div className={styles.metricGrid}>
+              {(
+                [
+                  ["list", "Médicos en la lista", guests.length],
+                  ["check", "Asistencias confirmadas", registeredCount],
+                  ["person", "Pendientes de llegada", pendingCount],
+                  ["ticket", "Invitados con boleto", ticketCount],
+                ] as const
+              ).map(([icon, label, value]) => (
+                <article className={styles.metric} key={label}>
+                  <span className={styles.metricIcon}>
+                    <Icon name={icon} />
+                  </span>
+                  <p>{label}</p>
+                  <strong>{value}</strong>
+                </article>
+              ))}
+            </div>
+            <div className={styles.statsGrid}>
+              <article className={styles.statsCard}>
+                <h3>Avance de asistencia</h3>
+                <p>De todos los médicos en la lista</p>
+                <div
+                  className={styles.donut}
+                  style={
+                    { "--progress": `${attendancePercent}%` } as CSSProperties
+                  }
+                  role="img"
+                  aria-label={`${attendancePercent}% de asistencia confirmada`}
+                >
+                  <div>
+                    <strong>
+                      {attendancePercent}
+                      <small>%</small>
+                    </strong>
+                    <span>de asistencia</span>
+                  </div>
+                </div>
+                <div className={styles.chartLegend}>
+                  <span>
+                    <i />
+                    Confirmados <strong>{registeredCount}</strong>
+                  </span>
+                  <span>
+                    <i />
+                    Pendientes <strong>{pendingCount}</strong>
+                  </span>
+                </div>
+              </article>
+              <article className={styles.statsCard}>
+                <h3>Asistencia por hospital</h3>
+                <p>Médicos registrados del total de invitados</p>
+                {hospitalStats.length ? (
+                  <div className={styles.hospitalStats}>
+                    {hospitalStats.map((hospital) => (
+                      <div key={hospital.name}>
+                        <div className={styles.barLabel}>
+                          <span>{hospital.name}</span>
+                          <strong>
+                            {hospital.registered}
+                            <small> / {hospital.total}</small>
+                          </strong>
+                        </div>
+                        <meter
+                          min={0}
+                          max={hospital.total}
+                          value={hospital.registered}
+                          aria-label={`${hospital.name}: ${hospital.registered} de ${hospital.total} registrados`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className={styles.statsEmpty}>
+                    <Icon name="hospital" size={32} />
+                    <p>
+                      Los hospitales aparecerán cuando agregues a los primeros
+                      médicos.
+                    </p>
+                  </div>
+                )}
+              </article>
+            </div>
+          </section>
+        )}
+        <footer className={styles.appFooter}>
+          <span>Hospital Ángeles Querétaro</span>
+          <span>Desayuno · Día del Médico</span>
+        </footer>
+      </div>
+
+      <dialog
+        ref={dialogRef}
+        className={styles.dialog}
+        aria-labelledby="attendance-dialog-title"
+        aria-describedby="attendance-dialog-description"
+        onCancel={(event) => {
+          if (modalBusy) event.preventDefault();
+          else setModal(null);
+        }}
+        onClose={() => setModal(null)}
+      >
+        {modal && (
+          <form onSubmit={confirmModal}>
+            <div className={styles.dialogTop}>
+              <span className={styles.dialogIcon}>
+                <Icon
+                  name={modal.kind === "ticket" ? "ticket" : "refresh"}
+                  size={28}
+                />
+              </span>
+              <button
+                type="button"
+                className={styles.iconButton}
+                aria-label="Cerrar ventana"
+                disabled={modalBusy}
+                onClick={() => setModal(null)}
+              >
+                <Icon name="close" />
+              </button>
+            </div>
+            <p className={styles.eyebrow}>
+              {modal.kind === "ticket"
+                ? "Un último paso"
+                : "Corregir asistencia"}
+            </p>
+            <h2 id="attendance-dialog-title">
+              {modal.kind === "ticket"
+                ? "Confirma tu boleto"
+                : "¿Deshacer este registro?"}
+            </h2>
+            <p
+              id="attendance-dialog-description"
+              className={styles.dialogDescription}
+            >
+              {modal.kind === "ticket"
+                ? "Escribe el número del boleto que recibiste en la entrada para confirmar tu llegada."
+                : "El médico volverá a aparecer como pendiente de llegada. Podrás registrar su asistencia nuevamente."}
+            </p>
+            <div className={styles.dialogGuest}>
+              <span className={styles.avatar}>
+                {initials(modal.guest.doctorName)}
+              </span>
+              <div>
+                <strong>{modal.guest.doctorName}</strong>
+                <span>{modal.guest.hospital}</span>
+              </div>
+            </div>
+            {modal.kind === "ticket" && (
+              <label className={styles.field} htmlFor="arrival-ticket">
+                Número de boleto <span>*</span>
+                <input
+                  ref={ticketInputRef}
+                  id="arrival-ticket"
+                  className={styles.largeTicketInput}
+                  placeholder="Ej. 0248"
+                  value={ticketNumber}
+                  onChange={(event) => setTicketNumber(event.target.value)}
+                  maxLength={40}
+                  required
+                  autoComplete="off"
+                  disabled={modalBusy}
+                />
+                <small>Revisa el número antes de confirmar.</small>
+              </label>
+            )}
+            {modalError && (
+              <p className={styles.modalError} role="alert">
+                {modalError}
+              </p>
+            )}
+            <button
+              className={styles.primaryButton}
+              type="submit"
+              disabled={modalBusy}
+            >
+              {modalBusy
+                ? "Guardando…"
+                : modal.kind === "ticket"
+                  ? "Confirmar mi llegada"
+                  : "Sí, deshacer registro"}
+              <Icon
+                name={modal.kind === "ticket" ? "check" : "refresh"}
+                size={19}
+              />
+            </button>
+            <button
+              type="button"
+              className={styles.dialogCancel}
+              disabled={modalBusy}
+              onClick={() => setModal(null)}
+            >
+              Cancelar y volver a la lista
+            </button>
+          </form>
+        )}
+      </dialog>
     </div>
   );
 }

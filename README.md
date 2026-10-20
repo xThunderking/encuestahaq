@@ -3,6 +3,53 @@
 Sistema para la lista de invitados y el control de asistencia del desayuno por el
 Día del Médico.
 
+## Flujo de recepción
+
+El menú principal muestra una bienvenida con un buscador. La tabla aparece al
+empezar a escribir y desaparece al limpiar la búsqueda. Permite buscar por nombre,
+apellidos, hospital o boleto, incluso sin acentos. Los resultados muestran etiquetas
+de estado: **Pendiente** en ámbar y **Registrado** en verde. Al registrar la llegada
+de un médico con boleto, se confirma su número en una ventana; los invitados sin
+boleto se registran directamente. Después de guardar la llegada, aparece una
+confirmación con el nombre del médico y, a los 5 segundos, vuelve automáticamente
+a la bienvenida con el buscador limpio para recibir al siguiente invitado.
+
+Si el médico no está en la lista, recepción puede agregarlo en **Registro doctor**
+y continuar con su asistencia, o solo agregarlo para después. El número de boleto
+es opcional al agregar al médico. La lista y las estadísticas se sincronizan en
+tiempo real en todos los equipos abiertos mediante suscripciones de Firestore y
+Server-Sent Events (SSE). Se utiliza la base `(default)` existente; las reglas de
+acceso de Firestore se mantienen cerradas y la suscripción pasa por el servidor.
+
+El avance general (registrados, pendientes y porcentaje) y el indicador de
+conexión aparecen en los tres módulos, incluida la bienvenida. Si se pierde la conexión,
+el navegador intenta recuperarla automáticamente y recibe una lista completa al
+reconectar. Mientras el canal se recupera, consulta los datos cada 5 segundos como
+respaldo. Para trabajar en cinco computadoras, abre la misma dirección del sistema
+en cada una y mantén su conexión a internet. No es necesario recargar la página.
+Las consultas de respaldo se ejecutan de una en una y se cancelan tras 10 segundos
+para evitar que una conexión lenta bloquee el canal de actualizaciones.
+
+Las llegadas se guardan en transacciones: si dos equipos registran al mismo médico,
+se conserva la primera asistencia y su boleto, y el segundo equipo recibe un aviso.
+Al deshacer una llegada, se verifica que corresponda a la que el operador tenía
+abierta; si otro equipo registró una llegada nueva, la solicitud anterior se rechaza.
+Las estadísticas se calculan a partir de la misma lista sincronizada. El servidor
+debe permitir respuestas HTTP en streaming sin buffering para `/api/admin/attendance/stream`.
+La conexión se renueva automáticamente cada cuatro minutos para respetar los
+límites de duración de las solicitudes del servidor.
+
+### Datos ficticios para pruebas
+
+Para agregar 20 registros identificados como **PRUEBA** a la lista compartida,
+ejecuta `node scripts/attendance-demo.cjs seed`. Incluye médicos de HAQ y HACS,
+con y sin boleto, y estados de asistencia pendientes y confirmados. Para quitar
+solo esos registros después, ejecuta `node scripts/attendance-demo.cjs clear --confirm`.
+Para revisar el total sin mostrar otros invitados, ejecuta
+`node scripts/attendance-demo.cjs verify`.
+La limpieza valida el marcador interno de cada registro y conserva los demás
+invitados.
+
 ## Estado temporal del módulo de encuestas
 
 El módulo de encuestas está desactivado por defecto. La portada muestra el espacio
@@ -101,13 +148,11 @@ http://localhost:3000
 
 ## Rutas
 
-- `/`: tabla de invitados y registro de asistencia, protegidos con acceso administrativo.
+- `/`: tabla pública de invitados y registro de asistencia, sin inicio de sesión.
 - `/encuesta/[token]`: no disponible mientras las encuestas estén desactivadas.
 - `/admin`: redirige a la lista principal en `/`.
-- `/api/admin/attendance`: consulta, agrega invitados y registra o deshace asistencias.
-- `/admin/login`: requiere acceso mediante Google y un
-  código de seis dígitos enviado al correo de la cuenta Google seleccionada.
-  La cuenta debe estar incluida en `ADMIN_ALLOWED_EMAILS`.
+- `/api/admin/attendance`: consulta, agrega invitados y registra o deshace asistencias sin autenticación.
+- `/admin/login`: redirige al sistema público en `/`.
 - `/api/health`: estado basico de la aplicacion, sin consultar la base de datos.
 - `/api/survey-responses`: desactivada mientras `ENABLE_SURVEYS` sea `false`.
 

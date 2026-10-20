@@ -7,7 +7,7 @@ export async function POST() {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
-    path: "/",
+    path: "/admin",
     maxAge: 0,
   });
   return Response.json({ authenticated: false });
