@@ -27,7 +27,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Lista de invitados desayuno evento Día del Médico",
+  title: "Invitados HAQ",
   description:
     "Control de invitados y asistencia del desayuno por el Día del Médico",
   icons: {
