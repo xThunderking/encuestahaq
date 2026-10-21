@@ -1,5 +1,9 @@
 import { z } from "zod";
 import { normalizeTicketNumber } from "@/modules/attendance/ticket-number";
+import {
+  TICKET_NUMBER_FORMAT,
+  TICKET_NUMBER_FORMAT_MESSAGE,
+} from "@/modules/attendance/ticket-number-format";
 
 export const attendanceGuestSchema = z
   .object({
@@ -16,16 +20,22 @@ export const attendanceGuestSchema = z
         : null,
   }));
 
-export const extraDoctorSchema = z
-  .object({
-    doctorName: z.string().trim().min(2).max(120),
-  });
+export const extraDoctorSchema = z.object({
+  doctorName: z.string().trim().min(2).max(120),
+});
 
 export const attendanceActionSchema = z.discriminatedUnion("action", [
   z.object({
     id: z.string().min(1).max(150),
     action: z.literal("check-in"),
-    ticketNumber: z.string().trim().min(1).max(40).optional(),
+    ticketNumber: z
+      .string()
+      .regex(TICKET_NUMBER_FORMAT, { error: TICKET_NUMBER_FORMAT_MESSAGE })
+      .optional(),
+  }),
+  z.object({
+    id: z.string().min(1).max(150),
+    action: z.literal("check-in-no-ticket"),
   }),
   z.object({
     id: z.string().min(1).max(150),

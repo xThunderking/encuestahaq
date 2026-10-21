@@ -15,6 +15,10 @@ import styles from "./attendance.module.css";
 import { useLiveAttendance } from "./use-live-attendance";
 import AttendanceExportButton from "./attendance-export-button";
 import AttendanceImport from "./attendance-import";
+import {
+  isValidTicketNumber,
+  TICKET_NUMBER_FORMAT_MESSAGE,
+} from "@/modules/attendance/ticket-number-format";
 
 type View = "table" | "register" | "stats";
 type Modal = { kind: "ticket" | "undo"; guest: AttendanceGuest } | null;
@@ -265,7 +269,7 @@ export default function AttendanceTable({
 
   async function updateAttendance(
     guest: AttendanceGuest,
-    action: "check-in" | "undo",
+    action: "check-in" | "check-in-no-ticket" | "undo",
     number?: string,
   ) {
     setError("");
@@ -279,7 +283,7 @@ export default function AttendanceTable({
         body: JSON.stringify({
           id: guest.id,
           action,
-          ticketNumber: number,
+          ...(action === "check-in" && number ? { ticketNumber: number } : {}),
           ...(action === "undo"
             ? { expectedCheckedInAt: guest.checkedInAt }
             : {}),
@@ -295,7 +299,7 @@ export default function AttendanceTable({
             "No pudimos guardar la asistencia. Inténtalo nuevamente.",
         );
       void refreshGuests(true);
-      if (action === "check-in") {
+      if (action !== "undo") {
         setArrivalConfirmation({
           doctorName: guest.doctorName,
           alreadyRegistered: result.alreadyRegistered === true,
@@ -389,9 +393,9 @@ export default function AttendanceTable({
   async function confirmModal(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!modal) return;
-    const number = ticketNumber.trim();
-    if (modal.kind === "ticket" && !number) {
-      setModalError("Escribe el número que aparece en tu boleto.");
+    const number = ticketNumber;
+    if (modal.kind === "ticket" && !isValidTicketNumber(number)) {
+      setModalError(TICKET_NUMBER_FORMAT_MESSAGE);
       return;
     }
     const saved = await updateAttendance(
@@ -399,6 +403,12 @@ export default function AttendanceTable({
       modal.kind === "ticket" ? "check-in" : "undo",
       modal.kind === "ticket" ? number : undefined,
     );
+    if (saved) setModal(null);
+  }
+
+  async function confirmWithoutTicket() {
+    if (!modal || modal.kind !== "ticket") return;
+    const saved = await updateAttendance(modal.guest, "check-in-no-ticket");
     if (saved) setModal(null);
   }
 
@@ -1126,15 +1136,19 @@ export default function AttendanceTable({
                   ref={ticketInputRef}
                   id="arrival-ticket"
                   className={styles.largeTicketInput}
-                  placeholder="Ej. 0248"
+                  placeholder="Ej. 248"
                   value={ticketNumber}
-                  onChange={(event) => setTicketNumber(event.target.value)}
-                  maxLength={40}
+                  onChange={(event) => {
+                    setTicketNumber(event.target.value);
+                    setModalError("");
+                  }}
+                  inputMode="numeric"
+                  maxLength={4}
                   required
                   autoComplete="off"
                   disabled={modalBusy}
                 />
-                <small>Revisa el número antes de confirmar.</small>
+                <small>Formato de 3 dígitos: del 001 al 999.</small>
               </label>
             )}
             {modalError && (
@@ -1157,6 +1171,16 @@ export default function AttendanceTable({
                 size={19}
               />
             </button>
+            {modal.kind === "ticket" && (
+              <button
+                type="button"
+                className={styles.noTicketButton}
+                disabled={modalBusy}
+                onClick={() => void confirmWithoutTicket()}
+              >
+                No traigo boleto
+              </button>
+            )}
             <button
               type="button"
               className={styles.dialogCancel}

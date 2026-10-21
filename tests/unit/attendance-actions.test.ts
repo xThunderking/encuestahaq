@@ -121,12 +121,21 @@ vi.mock("firebase-admin/firestore", () => ({
 }));
 
 import { PATCH, POST } from "@/app/api/admin/attendance/route";
+import { ticketReservationId } from "@/modules/attendance/ticket-number";
 
 const checkIn = (id: string, ticketNumber?: string) =>
   PATCH(
     new Request("http://localhost/api/admin/attendance", {
       method: "PATCH",
       body: JSON.stringify({ id, action: "check-in", ticketNumber }),
+    }),
+  );
+
+const checkInWithoutTicket = (id: string) =>
+  PATCH(
+    new Request("http://localhost/api/admin/attendance", {
+      method: "PATCH",
+      body: JSON.stringify({ id, action: "check-in-no-ticket" }),
     }),
   );
 
@@ -145,19 +154,23 @@ describe("concurrent attendance registration", () => {
     for (let i = 0; i < 5; i++)
       documents.set(String(i), { hasTicket: true, checkedInAt: null });
     const responses = await Promise.all(
-      Array.from({ length: 5 }, (_, i) => checkIn(String(i), `00${i}`)),
+      Array.from({ length: 5 }, (_, i) =>
+        checkIn(String(i), String(i + 1).padStart(3, "0")),
+      ),
     );
     expect(responses.every((response) => response.ok)).toBe(true);
     expect(update).toHaveBeenCalledTimes(5);
     for (let i = 0; i < 5; i++)
-      expect(documents.get(String(i))?.ticketNumber).toBe(`00${i}`);
+      expect(documents.get(String(i))?.ticketNumber).toBe(
+        String(i + 1).padStart(3, "0"),
+      );
   });
 
   it("preserves the first arrival and ticket when another computer registers the same doctor", async () => {
     documents.set("same-doctor", { hasTicket: true, checkedInAt: null });
     const responses = await Promise.all([
-      checkIn("same-doctor", "0123"),
-      checkIn("same-doctor", "0999"),
+      checkIn("same-doctor", "123"),
+      checkIn("same-doctor", "999"),
     ]);
     expect(await responses[0].json()).toMatchObject({
       registered: true,
@@ -168,7 +181,7 @@ describe("concurrent attendance registration", () => {
       alreadyRegistered: true,
     });
     expect(update).toHaveBeenCalledOnce();
-    expect(documents.get("same-doctor")?.ticketNumber).toBe("0123");
+    expect(documents.get("same-doctor")?.ticketNumber).toBe("123");
   });
 
   it("requires a ticket only for a doctor who has one", async () => {
@@ -179,8 +192,59 @@ describe("concurrent attendance registration", () => {
     expect(update).toHaveBeenCalledOnce();
   });
 
+  it("registers a ticketed doctor who arrives without a ticket number", async () => {
+    documents.set("without-number", {
+      hasTicket: true,
+      ticketNumber: null,
+      ticketNumberNormalized: null,
+      checkedInAt: null,
+    });
+
+    const response = await checkInWithoutTicket("without-number");
+
+    expect(response.status).toBe(200);
+    expect(documents.get("without-number")).toMatchObject({
+      checkedInAt: "server-timestamp",
+      ticketNumber: null,
+      ticketNumberNormalized: null,
+    });
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it("clears a prior number and releases its reservation when no ticket is brought", async () => {
+    const ticket = "123";
+    const reservationId = ticketReservationId(ticket);
+    documents.set("without-ticket", {
+      hasTicket: true,
+      ticketNumber: ticket,
+      ticketNumberNormalized: ticket,
+      checkedInAt: null,
+    });
+    reservations.set(reservationId, { guestId: "without-ticket" });
+
+    const response = await checkInWithoutTicket("without-ticket");
+
+    expect(response.status).toBe(200);
+    expect(documents.get("without-ticket")).toMatchObject({
+      ticketNumber: null,
+      ticketNumberNormalized: null,
+    });
+    expect(reservations.has(reservationId)).toBe(false);
+    expect(remove).toHaveBeenCalledOnce();
+  });
+
+  it("does not allow the no-ticket option for a doctor without a ticket", async () => {
+    documents.set("no-ticket-required", {
+      hasTicket: false,
+      checkedInAt: null,
+    });
+
+    expect((await checkInWithoutTicket("no-ticket-required")).status).toBe(400);
+    expect(update).not.toHaveBeenCalled();
+  });
+
   it("returns 404 when another station references a missing doctor", async () => {
-    expect((await checkIn("missing", "01")).status).toBe(404);
+    expect((await checkIn("missing", "001")).status).toBe(404);
     expect(update).not.toHaveBeenCalled();
   });
 
@@ -253,7 +317,7 @@ describe("concurrent attendance registration", () => {
         body: JSON.stringify({
           id: "doctor",
           action: "check-in",
-          ticketNumber: "12345",
+          ticketNumber: "123",
         }),
       }),
     );
@@ -316,7 +380,7 @@ describe("concurrent attendance registration", () => {
       documents.set("doctor", { hasTicket: true, checkedInAt: null });
       const [arrival, creation] = await sendFromOrigin(url, headers);
       expect(arrival.status).toBe(200);
-      expect(documents.get("doctor")?.ticketNumber).toBe("12345");
+      expect(documents.get("doctor")?.ticketNumber).toBe("123");
       expect(creation.status).toBe(201);
       expect(create).toHaveBeenCalledTimes(2);
       expect(documents.get("new-doctor-1")).toMatchObject({

@@ -86,7 +86,10 @@
 .brand {
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(120px, 160px) minmax(0, 1fr) minmax(120px, 160px);
+  grid-template-columns: minmax(120px, 160px) minmax(0, 1fr) minmax(
+      120px,
+      160px
+    );
   align-items: center;
   gap: 16px;
   max-width: 950px;
@@ -1683,6 +1686,20 @@
   margin-top: 3px;
   min-height: 49px;
 }
+.noTicketButton {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 10px;
+  border: 1px solid #c8dff3;
+  border-radius: 10px;
+  background: #f2f8ff;
+  color: var(--navy);
+  font-weight: 650;
+}
+.noTicketButton:hover:not(:disabled) {
+  background: #e5f2ff;
+  border-color: #9fc8ea;
+}
 .dialogCancel {
   border: 0;
   background: transparent;
@@ -1938,6 +1955,9 @@
   .brandHospital {
     font-size: 9px;
     letter-spacing: 0.08em;
+  }
+  .brand > div {
+    text-align: center;
   }
   .brand h1 {
     font-size: 11px;

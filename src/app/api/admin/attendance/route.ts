@@ -142,6 +142,12 @@ export async function PATCH(request: Request) {
 
   const result = attendanceActionSchema.safeParse(body);
   if (!result.success) {
+    const ticketError = result.error.issues.find(
+      (issue) => issue.path[0] === "ticketNumber",
+    );
+    if (ticketError) {
+      return Response.json({ error: ticketError.message }, { status: 400 });
+    }
     return Response.json({ error: "Registro no válido." }, { status: 400 });
   }
 
@@ -153,13 +159,25 @@ export async function PATCH(request: Request) {
       if (!document.exists)
         return { status: 404, error: "Invitado no encontrado." };
       const guest = document.data();
-      if (action.action === "check-in") {
+      if (
+        action.action === "check-in" ||
+        action.action === "check-in-no-ticket"
+      ) {
         // Concurrent attempts retry against the latest document and preserve the first ticket.
         if (guest?.checkedInAt)
           return { status: 200, registered: true, alreadyRegistered: true };
+        const skippingTicket = action.action === "check-in-no-ticket";
+        if (skippingTicket && guest?.hasTicket !== true) {
+          return {
+            status: 400,
+            error: "Este médico no requiere validar un boleto.",
+          };
+        }
         const ticketNumber =
-          guest?.hasTicket === true ? action.ticketNumber?.trim() : null;
-        if (guest?.hasTicket === true && !ticketNumber) {
+          guest?.hasTicket === true && action.action === "check-in"
+            ? action.ticketNumber?.trim()
+            : null;
+        if (guest?.hasTicket === true && !skippingTicket && !ticketNumber) {
           return {
             status: 400,
             error: "Ingresa el número de boleto para registrar la asistencia.",
@@ -167,10 +185,10 @@ export async function PATCH(request: Request) {
         }
 
         const reservation =
-          guest?.hasTicket === true
-            ? await findTicketConflict(transaction, reference.id, ticketNumber!)
+          guest?.hasTicket === true && ticketNumber
+            ? await findTicketConflict(transaction, reference.id, ticketNumber)
             : null;
-        if (guest?.hasTicket === true && !reservation) {
+        if (guest?.hasTicket === true && !skippingTicket && !reservation) {
           return {
             status: 409,
             error: "Ese número de boleto ya está asignado a otro médico.",
@@ -211,8 +229,9 @@ export async function PATCH(request: Request) {
           checkedInAt: FieldValue.serverTimestamp(),
           ...(guest?.hasTicket === true
             ? {
-                ticketNumber,
-                ticketNumberNormalized: reservation!.normalizedTicketNumber,
+                ticketNumber: ticketNumber ?? null,
+                ticketNumberNormalized:
+                  reservation?.normalizedTicketNumber ?? null,
               }
             : {}),
           updatedAt: FieldValue.serverTimestamp(),
