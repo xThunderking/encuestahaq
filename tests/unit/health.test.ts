@@ -8,7 +8,7 @@ describe("GET /api/health", () => {
 
     await expect(response.json()).resolves.toEqual({
       status: "ok",
-      application: "encuestashaq",
+      application: "asistencia-haq",
     });
   });
 });

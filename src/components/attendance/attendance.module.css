@@ -85,18 +85,23 @@
 }
 .brand {
   min-width: 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(120px, 160px) minmax(0, 1fr) minmax(120px, 160px);
   align-items: center;
-  gap: 20px;
-  max-width: 560px;
+  gap: 16px;
+  max-width: 950px;
 }
 .brandLogo {
-  width: 170px;
-  height: 100px;
-  object-fit: cover;
-  flex-shrink: 0;
-  border-right: 1px solid var(--line);
-  padding-right: 15px;
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+.brandSecondaryLogo {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
 }
 .brandHospital {
   text-transform: uppercase;
@@ -693,24 +698,6 @@
   min-width: 130px;
   overflow-wrap: anywhere;
 }
-.hospitalName {
-  min-width: 0;
-  overflow-wrap: anywhere;
-  display: inline-flex;
-  align-items: center;
-  color: #195f9e;
-  background: #edf5ff;
-  border: 1px solid #d8e8fb;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 650;
-}
-.hospitalName[data-hospital="HACS"] {
-  color: #6352a3;
-  background: #f3efff;
-  border-color: #e5ddfa;
-}
 .ticketBadge,
 .mutedBadge {
   display: inline-flex;
@@ -1234,7 +1221,7 @@
 }
 .importColumns {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   padding: 0;
   margin: 22px 0;
@@ -1409,7 +1396,7 @@
 }
 .statsGrid {
   display: grid;
-  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 22px;
 }
 .statsCard {
@@ -1598,67 +1585,6 @@
   color: #5c7582;
   margin-left: 3px;
 }
-.hospitalStats {
-  margin-top: 25px;
-  display: grid;
-  gap: 22px;
-  max-height: 330px;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-.barLabel {
-  overflow-wrap: anywhere;
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 9px;
-  font-size: 12px;
-}
-.barLabel strong {
-  color: var(--teal);
-  white-space: nowrap;
-}
-.barLabel small {
-  color: #a1aeb5;
-  font-weight: 400;
-  font-size: 11px;
-}
-.hospitalStats meter {
-  appearance: none;
-  display: block;
-  width: 100%;
-  height: 7px;
-  border: 0;
-  background: #e7effa;
-  border-radius: 5px;
-}
-.hospitalStats meter::-webkit-meter-bar {
-  background: #edf2f4;
-  border: 0;
-  border-radius: 5px;
-}
-.hospitalStats meter::-webkit-meter-optimum-value {
-  background: linear-gradient(90deg, #1265b0, #24bad7);
-  border-radius: 5px;
-}
-.hospitalStats meter::-moz-meter-bar {
-  background: linear-gradient(90deg, #1265b0, #24bad7);
-  border-radius: 5px;
-}
-.statsEmpty {
-  display: flex;
-  min-height: 240px;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  gap: 16px;
-  text-align: center;
-  color: #a1b2ba;
-}
-.statsEmpty p {
-  max-width: 260px;
-  font-size: 12px;
-}
 .dialog {
   position: fixed;
   top: calc(
@@ -1798,10 +1724,7 @@
   }
   .brand {
     max-width: none;
-  }
-  .brandLogo {
-    width: 144px;
-    height: 85px;
+    width: 100%;
   }
   .menu {
     width: 100%;
@@ -1895,10 +1818,6 @@
     max-width: 60%;
     text-align: right;
   }
-  .hospitalName {
-    max-width: 65%;
-    text-align: right;
-  }
   .arrivalButton {
     width: 100%;
     min-height: 48px;
@@ -1976,7 +1895,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .statsGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 16px;
   }
   .statsCard {
@@ -2013,12 +1932,8 @@
     padding-block: 12px;
   }
   .brand {
-    gap: 12px;
-  }
-  .brandLogo {
-    width: 116px;
-    height: 78px;
-    padding-right: 12px;
+    grid-template-columns: minmax(78px, 1fr) minmax(0, 1.25fr) minmax(78px, 1fr);
+    gap: 10px;
   }
   .brandHospital {
     font-size: 9px;
@@ -2259,9 +2174,6 @@
   .chartLegend > span {
     font-size: 12px;
   }
-  .barLabel {
-    font-size: 14px;
-  }
   .dialog {
     padding: 24px;
     border-radius: 18px;
@@ -2300,10 +2212,8 @@
 }
 
 @media (max-width: 400px) {
-  .brandLogo {
-    width: 92px;
-    height: 66px;
-    padding-right: 10px;
+  .brand {
+    grid-template-columns: minmax(62px, 1fr) minmax(0, 1.25fr) minmax(62px, 1fr);
   }
   .brandHospital {
     font-size: 8px;
@@ -2372,8 +2282,10 @@
     gap: 8px;
   }
   .brandLogo {
-    width: 88px;
-    height: 52px;
+    max-height: 52px;
+  }
+  .brandSecondaryLogo {
+    max-height: 52px;
   }
   .brand h1 strong {
     font-size: 18px;
@@ -2437,9 +2349,11 @@
     padding-block: 8px;
     gap: 8px;
   }
-  .brandLogo {
-    width: 88px;
-    height: 52px;
+  .brandLogo,
+  .brandSecondaryLogo {
+    width: 100%;
+    height: auto;
+    max-height: 52px;
   }
   .brand {
     flex: 1;

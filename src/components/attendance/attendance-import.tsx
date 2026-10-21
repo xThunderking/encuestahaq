@@ -206,13 +206,6 @@ export default function AttendanceImport({
         <li>
           <span>2</span>
           <div>
-            <strong>Hospital</strong>
-            <small>HAQ o HACS</small>
-          </div>
-        </li>
-        <li>
-          <span>3</span>
-          <div>
             <strong>Boleto</strong>
             <small>SI o NO</small>
           </div>
@@ -251,8 +244,8 @@ export default function AttendanceImport({
         </button>
       </form>
       <p className={styles.importNote}>
-        El número de boleto se confirma al llegar al evento. Si el nombre y
-        hospital ya están en la lista, se conservan sus datos.
+        El número de boleto se confirma al llegar al evento. Si el médico ya
+        está en la lista, se conservan sus datos.
       </p>
       {success && (
         <p

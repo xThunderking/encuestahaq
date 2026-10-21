@@ -1,0 +1,30 @@
+{
+  "score": 2,
+  "summary": "The Firestore rules deny all direct client access, but the attendance application uses the Admin SDK from unauthenticated public endpoints. Seven simultaneous live connections passed; the remaining major risk is public access and abuse, not the tested event workload.",
+  "findings": [
+    {
+      "check": "Business Logic vs. Rules",
+      "severity": "major",
+      "issue": "GET, SSE, and Excel export expose the complete guest list, including doctor names, hospitals, ticket numbers, and arrival times. POST, PATCH, and Excel import also accept unauthenticated requests. These server routes use the Firebase Admin SDK, so the deny-all Firestore rules do not protect them. Origin validation is not authentication and accepts requests without an Origin header.",
+      "recommendation": "If the event should not be publicly accessible, protect staff and data endpoints with a shared event PIN or authenticated device session. Keep the public welcome flow limited to the minimum fields it needs, and protect statistics, export, import, and receptionist registration."
+    },
+    {
+      "check": "Storage Abuse",
+      "severity": "moderate",
+      "issue": "Public doctor creation and imports have no rate limit. A caller can repeatedly add Extras or submit valid imports of up to 500 doctors, changing attendance data or increasing Firestore work.",
+      "recommendation": "Add an access check and server-side rate limits for receptionist registration and imports, and alert on unusually high request volume."
+    },
+    {
+      "check": "Data Integrity",
+      "severity": "moderate",
+      "issue": "Receptionist registration creates a new random document every time and does not check whether the same doctor and hospital were already added as an Extra.",
+      "recommendation": "Use a normalized doctor-and-hospital identity with a deterministic document ID or an equivalent atomic uniqueness reservation, and return a duplicate response when the guest already exists."
+    },
+    {
+      "check": "Resource Exhaustion",
+      "severity": "minor",
+      "issue": "Each Firestore snapshot serializes the full guest list to every connected browser. This passed at seven connections in the audit, but repeats the full 400-doctor payload for each arrival update.",
+      "recommendation": "If the guest list or number of screens grows materially, send an initial full snapshot followed by document-level changes."
+    }
+  ]
+}

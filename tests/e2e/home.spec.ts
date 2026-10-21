@@ -1,130 +1,133 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-async function chooseService(page: Page, service = "Urgencias") {
-  await page.getByText("Confianza en la marca", { exact: true }).click();
-  await page.getByText(service, { exact: true }).click();
-  if (service === "Check-up")
-    await page.getByText("Check-up Femenino", { exact: true }).click();
-  await page.getByRole("button", { name: "Continuar", exact: true }).click();
-}
-
-test("three steps preserve answers and submit the completed survey", async ({
+test("shows the event welcome, navigation and live attendance status", async ({
   page,
 }) => {
-  const writes: string[] = [];
-  await page.route("**/api/survey-responses", async (route) => {
-    await route.fulfill({
-      status: 201,
-      contentType: "application/json",
-      body: JSON.stringify({ id: 1, submittedAt: new Date().toISOString() }),
-    });
-  });
-  page.on("request", (r) => {
-    if (["POST", "PUT", "PATCH", "DELETE"].includes(r.method()))
-      writes.push(r.url());
-  });
   await page.goto("/");
-  await page.getByText("Convenio", { exact: true }).click();
+
   await expect(
-    page.getByText("¿Con que empresa?", { exact: true }),
+    page.getByRole("heading", { name: "¡Bienvenido al Día del Médico!" }),
   ).toBeVisible();
-  await chooseService(page);
-  await expect(page.getByRole("radiogroup")).toHaveCount(6);
-  for (const option of await page.getByText("EXCELENTE", { exact: true }).all())
-    await option.click();
-  await page.getByRole("button", { name: "Volver", exact: true }).click();
-  await expect(page.locator('input[value="7"]:checked')).toHaveCount(1);
-  await page.getByRole("button", { name: "Continuar", exact: true }).click();
-  await expect(page.getByRole("radio", { checked: true })).toHaveCount(6);
-  await page.getByRole("button", { name: "Continuar", exact: true }).click();
-  await page.locator(".sd-rating label").last().click();
-  await page.getByRole("textbox").fill("Buena atención durante el estudio.");
-  await page.getByText("Si", { exact: true }).click();
-  await expect(page.getByText("Correo", { exact: true })).toBeVisible();
-  await page.getByText("No", { exact: true }).click();
-  await expect(page.getByText("Correo", { exact: true })).not.toBeVisible();
-  await page.getByRole("button", { name: "Finalizar", exact: true }).click();
   await expect(
-    page.getByRole("heading", {
-      name: "Su opinión es muy valiosa para Hospital Angeles Querétaro",
+    page.getByRole("navigation", { name: "Navegación principal" }),
+  ).toContainText("Registro doctor");
+  await expect(page.getByText(/de \d+ médicos registrados/)).toBeVisible();
+  await expect(
+    page.getByRole("status").filter({
+      hasText: "Conectado · Actualización en tiempo real",
     }),
-  ).toBeVisible();
-  expect(writes).toEqual([expect.stringContaining("/api/survey-responses")]);
-  await page.reload();
-  await expect(page.getByRole("radio", { checked: true })).toHaveCount(0);
+  ).toBeVisible({ timeout: 20_000 });
 });
 
-test("validation, Check-up branch and language change", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Continuar", exact: true }).click();
-  await expect(page.locator(".sd-question--error").first()).toBeVisible();
-  await chooseService(page, "Check-up");
-  await expect(page.getByRole("radiogroup")).toHaveCount(8);
-  await page.getByText("BUENO", { exact: true }).first().click();
-  await page
-    .getByRole("combobox", { name: "Idioma / Language" })
-    .selectOption("en");
-  await expect(
-    page.getByRole("heading", { name: "How was your care?" }),
-  ).toBeVisible();
-  await expect(page.getByText("EXCELLENT", { exact: true })).toHaveCount(8);
-  await expect(page.getByRole("radio", { checked: true })).toHaveCount(1);
-});
-
-test("mobile has large targets and visible rating options", async ({
-  page,
+test("keeps six registration computers and an iPad-sized screen connected", async ({
+  browser,
 }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
-  await chooseService(page);
-  for (const label of await page.locator(".sd-selectbase__label").all()) {
-    const box = await label.boundingBox();
-    expect(box!.height).toBeGreaterThanOrEqual(48);
-    expect(box!.x).toBeGreaterThanOrEqual(0);
-    expect(box!.x + box!.width).toBeLessThanOrEqual(390);
-  }
-  for (const option of await page.getByText("REGULAR", { exact: true }).all())
-    await option.click();
-  await page.getByRole("button", { name: "Continuar", exact: true }).click();
-  await expect(page.locator(".sd-rating label")).toHaveCount(11);
-  for (const label of await page.locator(".sd-rating label").all()) {
-    const box = await label.boundingBox();
-    expect(box!.x).toBeGreaterThanOrEqual(0);
-    expect(box!.x + box!.width).toBeLessThanOrEqual(390);
-  }
-  await page.screenshot({
-    path: "test-results/survey-mobile.png",
-    fullPage: true,
+  test.setTimeout(60_000);
+  const pages = await Promise.all(
+    Array.from({ length: 6 }, () => browser.newPage()),
+  );
+  const ipad = await browser.newPage({
+    viewport: { width: 820, height: 1180 },
   });
+  pages.push(ipad);
+
+  try {
+    await Promise.all(pages.map((page) => page.goto("/")));
+    for (const page of pages) {
+      await expect(
+        page.getByRole("status").filter({
+          hasText: "Conectado · Actualización en tiempo real",
+        }),
+      ).toBeVisible({ timeout: 20_000 });
+    }
+  } finally {
+    await Promise.all(pages.map((page) => page.close()));
+  }
 });
 
-test("layout has no horizontal overflow across device sizes", async ({
+test("search and navigation work without writing event data", async ({
   page,
 }) => {
-  const viewports = [
-    { width: 280, height: 653 },
+  await page.goto("/");
+  await page
+    .getByRole("searchbox", {
+      name: "Buscar médico por nombre, apellidos o boleto",
+    })
+    .fill("__prueba_sin_coincidencias__");
+  await expect(
+    page.getByRole("heading", { name: "Encuentra tu nombre" }),
+  ).toBeVisible();
+  await expect(page.getByText("No encontramos coincidencias")).toBeVisible();
+
+  await page
+    .getByRole("button", { name: "Registro doctor", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Registro doctor", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByLabel(/Nombre completo del médico/)).toBeVisible();
+
+  await page.getByRole("button", { name: "Estadísticas" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Estadísticas de asistencia" }),
+  ).toBeVisible();
+});
+
+test("confirms an extra and returns to the registration form after five seconds", async ({
+  page,
+}) => {
+  await page.route("**/api/admin/attendance", async (route) => {
+    if (route.request().method() === "POST") {
+      await route.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: JSON.stringify({ id: "extra-test-doctor" }),
+      });
+      return;
+    }
+    await route.continue();
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Registro doctor" }).click();
+  await page
+    .getByLabel(/Nombre completo del médico/)
+    .fill("Doctora de prueba extra");
+  await page
+    .getByRole("button", { name: /Agregar y registrar llegada/ })
+    .click();
+
+  await expect(
+    page.getByRole("heading", { name: "¡Registro confirmado!" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "Volveremos al registro en 5 segundos para continuar con el siguiente médico.",
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Registro doctor", exact: true }),
+  ).toBeVisible({ timeout: 8_000 });
+  await expect(page.getByLabel(/Nombre completo del médico/)).toHaveValue("");
+});
+
+test("does not overflow narrow and rotated screens", async ({ page }) => {
+  for (const viewport of [
     { width: 320, height: 568 },
     { width: 390, height: 844 },
     { width: 667, height: 375 },
     { width: 768, height: 1024 },
-    { width: 1024, height: 768 },
     { width: 1366, height: 768 },
-    { width: 1920, height: 1080 },
-    { width: 3840, height: 2160 },
-  ];
-
-  for (const viewport of viewports) {
+  ]) {
     await page.setViewportSize(viewport);
     await page.goto("/");
     await expect(
-      page.getByRole("heading", { name: "Su experiencia nos importa" }),
+      page.getByRole("heading", { name: "¡Bienvenido al Día del Médico!" }),
     ).toBeVisible();
     const widths = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,
       document: document.documentElement.scrollWidth,
-      body: document.body.scrollWidth,
     }));
     expect(widths.document).toBeLessThanOrEqual(widths.viewport);
-    expect(widths.body).toBeLessThanOrEqual(widths.viewport);
   }
 });

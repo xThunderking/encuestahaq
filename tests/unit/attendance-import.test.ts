@@ -94,7 +94,7 @@ function upload(
 beforeEach(reset);
 
 describe("Excel doctor registration", () => {
-  it("downloads a blank template with exactly three fields and the required dropdown choices", async () => {
+  it("downloads a blank template with the name and ticket fields", async () => {
     const response = await templateGET();
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Disposition")).toContain(
@@ -105,12 +105,12 @@ describe("Excel doctor registration", () => {
     const sheet = workbook.getWorksheet("Médicos")!;
     expect((sheet.getRow(1).values as ExcelJS.CellValue[]).slice(1)).toEqual([
       "NOMBRE DEL MEDICO",
-      "HOSPITAL",
       "BOLETO",
     ]);
     expect(sheet.getCell("A2").value).toBeNull();
-    expect(sheet.getCell("B2").dataValidation.formulae).toEqual(['"HAQ,HACS"']);
-    expect(sheet.getCell("C2").dataValidation.formulae).toEqual(['"SI,NO"']);
+    expect(sheet.getCell("B2").dataValidation.formulae).toEqual(['"SI,NO"']);
+    expect(sheet.getCell("B571").dataValidation.formulae).toEqual(['"SI,NO"']);
+    expect(sheet.getCell("C2").value).toBeNull();
     expect(sheet.views[0]).toMatchObject({ state: "frozen", ySplit: 1 });
     expect(runTransaction).not.toHaveBeenCalled();
     const empty = await parseAttendanceImport(await createAttendanceTemplate());
@@ -128,12 +128,12 @@ describe("Excel doctor registration", () => {
     );
     expect(parsed.issues).toEqual([]);
     expect(parsed.records).toEqual([
-      { doctorName: "Dra. Ana López", hospital: "HAQ", hasTicket: true },
-      { doctorName: "Dr. Bruno", hospital: "HACS", hasTicket: false },
+      { doctorName: "Dra. Ana López", hasTicket: true },
+      { doctorName: "Dr. Bruno", hasTicket: false },
     ]);
   });
 
-  it("rejects the whole file when a row contains an invalid hospital or ticket value", async () => {
+  it("ignores a legacy hospital value and rejects an invalid ticket value", async () => {
     const response = await upload(
       await spreadsheet([
         ["Doctor válido", "HAQ", "SI"],
@@ -146,19 +146,16 @@ describe("Excel doctor registration", () => {
       expect.arrayContaining([
         expect.objectContaining({
           row: 3,
-          message: expect.stringContaining("HAQ o HACS"),
-        }),
-        expect.objectContaining({
-          row: 3,
           message: expect.stringContaining("SI o NO"),
         }),
       ]),
     );
+    expect(result.issues).toHaveLength(1);
     expect(runTransaction).not.toHaveBeenCalled();
     expect(documents.size).toBe(0);
   });
 
-  it("identifies repeated names and hospitals within the same Excel file", async () => {
+  it("identifies repeated doctors by name within the same Excel file", async () => {
     const parsed = await parseAttendanceImport(
       await spreadsheet([
         ["Ana López", "HAQ", "SI"],
@@ -199,7 +196,7 @@ describe("Excel doctor registration", () => {
     expect(response.status).toBe(400);
     expect((await response.json()).issues).toContainEqual(
       expect.objectContaining({
-        message: expect.stringContaining("máximo de 500"),
+        message: expect.stringContaining(`máximo de ${MAX_IMPORT_ROWS}`),
       }),
     );
     expect(runTransaction).not.toHaveBeenCalled();
@@ -235,7 +232,7 @@ describe("Excel doctor registration", () => {
     ]);
   });
 
-  it("accepts a complete file with 500 valid doctors in one transaction", async () => {
+  it("accepts the full 570-doctor list using Firestore-safe transactions", async () => {
     const response = await upload(
       await spreadsheet(
         Array.from({ length: MAX_IMPORT_ROWS }, (_, index) => [
@@ -247,12 +244,12 @@ describe("Excel doctor registration", () => {
     );
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual({
-      imported: 500,
+      imported: 570,
       skipped: 0,
-      total: 500,
+      total: 570,
     });
-    expect(documents.size).toBe(500);
-    expect(runTransaction).toHaveBeenCalledTimes(1);
+    expect(documents.size).toBe(570);
+    expect(runTransaction).toHaveBeenCalledTimes(2);
   });
 
   it("preserves the data, ticket and arrival of doctors already added manually", async () => {

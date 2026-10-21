@@ -4,7 +4,8 @@ import type { DocumentSnapshot } from "firebase-admin/firestore";
 export type AttendanceGuest = {
   id: string;
   doctorName: string;
-  hospital: string;
+  /** Legacy field accepted for existing fixtures; never read or returned. */
+  hospital?: string;
   isExtra?: boolean;
   hasTicket: boolean;
   ticketNumber: string | null;
@@ -24,7 +25,6 @@ export function serializeAttendanceGuest(
   return {
     id: document.id,
     doctorName: String(data.doctorName ?? ""),
-    hospital: String(data.hospital ?? ""),
     isExtra: data.isExtra === true,
     hasTicket: data.hasTicket === true,
     ticketNumber:

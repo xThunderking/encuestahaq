@@ -1,14 +1,9 @@
-export const MAX_IMPORT_ROWS = 500;
+export const MAX_IMPORT_ROWS = 570;
 export const MAX_IMPORT_FILE_BYTES = 2 * 1024 * 1024;
-export const IMPORT_HEADERS = [
-  "NOMBRE DEL MEDICO",
-  "HOSPITAL",
-  "BOLETO",
-] as const;
+export const IMPORT_HEADERS = ["NOMBRE DEL MEDICO", "BOLETO"] as const;
 
 export type AttendanceImportRecord = {
   doctorName: string;
-  hospital: "HAQ" | "HACS";
   hasTicket: boolean;
 };
 export type AttendanceImportIssue = { row: number; message: string };
@@ -27,6 +22,6 @@ export function normalizeImportText(value: string) {
     .toUpperCase();
 }
 
-export function attendanceImportIdentity(doctorName: string, hospital: string) {
-  return `${normalizeImportText(doctorName)}\u0000${normalizeImportText(hospital)}`;
+export function attendanceImportIdentity(doctorName: string) {
+  return normalizeImportText(doctorName);
 }

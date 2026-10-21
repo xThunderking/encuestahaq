@@ -74,6 +74,7 @@ function reportSheet(
   subtitle: string,
   generatedAt: Date,
   tabColor: string,
+  lastColumn = "H",
 ) {
   const sheet = workbook.addWorksheet(name, {
     properties: { tabColor: { argb: tabColor }, defaultRowHeight: 24 },
@@ -96,12 +97,12 @@ function reportSheet(
     },
     headerFooter: {
       oddFooter:
-        "&LHospital Ángeles Querétaro&CDesayuno · Día del Médico&RPágina &P de &N",
+        "&LHospital Ángeles Health System&CDesayuno · Día del Médico&RPágina &P de &N",
     },
   });
   banner(
     sheet,
-    "A1:H2",
+    `A1:${lastColumn}2`,
     "DESAYUNO · DÍA DEL MÉDICO",
     colors.navy,
     colors.white,
@@ -109,14 +110,14 @@ function reportSheet(
   );
   banner(
     sheet,
-    "A3:H3",
-    `Hospital Ángeles Querétaro  |  ${subtitle}`,
+    `A3:${lastColumn}3`,
+    `Hospital Ángeles Health System  |  ${subtitle}`,
     colors.blue,
   );
   const p = dateParts(generatedAt);
   banner(
     sheet,
-    "A4:H4",
+    `A4:${lastColumn}4`,
     `Corte: ${p.day}/${p.month}/${p.year} ${p.hour}:${p.minute}:${p.second} · Hora de Ciudad de México`,
     colors.pale,
     colors.muted,
@@ -156,18 +157,18 @@ function guestSheet(
     `${name} · ${guests.length} médicos`,
     generatedAt,
     tabColor,
+    "G",
   );
   const labels = [
     "No.",
     "Nombre del médico",
-    "Hospital",
     "Asistencia",
     "¿Tiene boleto?",
     "No. de boleto",
     "Fecha de llegada",
     "Hora de llegada",
   ];
-  [7, 46, 14, 20, 18, 24, 20, 20].forEach((width, index) => {
+  [7, 46, 20, 18, 24, 20, 20].forEach((width, index) => {
     sheet.getColumn(index + 1).width = width;
   });
   const rows = guests.map((guest, index) => {
@@ -175,7 +176,6 @@ function guestSheet(
     return [
       index + 1,
       guest.doctorName,
-      guest.hospital,
       guest.checkedInAt ? "Asistió" : "Sin asistencia",
       guest.hasTicket ? "Sí" : "No",
       guest.hasTicket ? guest.ticketNumber || "Sin asignar" : "No aplica",
@@ -196,7 +196,7 @@ function guestSheet(
     sheet.getRow(6).values = labels;
     banner(
       sheet,
-      "A7:H8",
+      "A7:G8",
       "No hay médicos en esta categoría al momento del corte.",
       colors.pale,
       colors.muted,
@@ -233,7 +233,7 @@ function guestSheet(
       cell.border = { bottom: { style: "hair", color: { argb: colors.line } } };
       cell.fill = fill(index % 2 ? colors.pale : colors.white);
     });
-    const status = row.getCell(4);
+    const status = row.getCell(3);
     status.font = {
       name: "Calibri",
       size: 11,
@@ -243,16 +243,16 @@ function guestSheet(
     status.fill = fill(
       guest.checkedInAt ? colors.greenLight : colors.amberLight,
     );
-    row.getCell(6).numFmt = "@";
-    row.getCell(6).font = {
+    row.getCell(5).numFmt = "@";
+    row.getCell(5).font = {
       name: "Consolas",
       size: 11,
       color: { argb: colors.blue },
     };
-    row.getCell(7).numFmt = "dd/mm/yyyy";
-    row.getCell(8).numFmt = "hh:mm:ss";
+    row.getCell(6).numFmt = "dd/mm/yyyy";
+    row.getCell(7).numFmt = "hh:mm:ss";
   });
-  sheet.pageSetup.printArea = `A1:H${Math.max(8, guests.length + 6)}`;
+  sheet.pageSetup.printArea = `A1:G${Math.max(8, guests.length + 6)}`;
 }
 
 export async function createAttendanceExcel(
@@ -290,7 +290,7 @@ export async function createAttendanceExcel(
     guest.ticketNumber?.trim(),
   );
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "Hospital Ángeles Querétaro";
+  workbook.creator = "Hospital Ángeles Health System";
   workbook.title = "Lista de invitados · Desayuno Día del Médico";
   workbook.subject = "Control de asistencia y boletos";
   workbook.created = generatedAt;
@@ -309,7 +309,7 @@ export async function createAttendanceExcel(
     {
       from: "A",
       to: "B",
-      label: "LISTA OFICIAL",
+      label: "MÉDICOS EN LISTA",
       value: sorted.length,
       color: colors.blue,
       bg: colors.pale,
@@ -333,7 +333,7 @@ export async function createAttendanceExcel(
     {
       from: "G",
       to: "H",
-      label: "LISTA OFICIAL",
+      label: "ASISTENCIA GENERAL",
       value: sorted.length ? attended.length / sorted.length : 0,
       color: colors.blue,
       bg: colors.pale,
@@ -360,49 +360,34 @@ export async function createAttendanceExcel(
     cell.alignment = { horizontal: "center", vertical: "middle" };
     cell.numFmt = card.from === "G" ? "0.0%" : "0";
   }
-  banner(summary, "A10:D10", "ASISTENCIA POR HOSPITAL", colors.blue);
-  summary.getRow(11).values = [
-    "Hospital",
-    "Invitados",
-    "Asistieron",
-    "Sin asistencia",
+  banner(summary, "A10:D10", "PROGRESO GENERAL", colors.blue);
+  const attendanceMetrics: [string, number][] = [
+    ["Médicos en lista", sorted.length],
+    ["Asistieron", attended.length],
+    ["Pendientes", pending.length],
   ];
-  for (let column = 1; column <= 4; column++) {
-    const cell = summary.getCell(11, column);
-    cell.fill = fill(colors.pale);
-    cell.font = {
-      name: "Calibri",
-      size: 11,
-      bold: true,
-      color: { argb: colors.blue },
-    };
-    cell.alignment = {
-      vertical: "middle",
-      horizontal: "center",
-      wrapText: true,
-    };
-  }
-  const hospitals = [
-    ...new Set(["HAQ", "HACS", ...sorted.map((guest) => guest.hospital)]),
-  ].sort();
-  hospitals.forEach((hospital, index) => {
-    const invited = sorted.filter((guest) => guest.hospital === hospital);
-    const arrived = invited.filter((guest) => guest.checkedInAt).length;
-    const row = summary.getRow(index + 12);
-    [hospital, invited.length, arrived, invited.length - arrived].forEach(
-      (value, column) => {
-        const cell = row.getCell(column + 1);
-        cell.value = value;
-        cell.fill = fill(index % 2 ? colors.pale : colors.white);
-        cell.alignment = { vertical: "middle", horizontal: "center" };
-        cell.font = {
-          name: "Calibri",
-          size: 12,
-          bold: column === 0,
-          color: { argb: colors.ink },
-        };
-      },
-    );
+  attendanceMetrics.forEach(([label, count], index) => {
+    const row = index + 11;
+    summary.mergeCells(`A${row}:C${row}`);
+    summary.getCell(`A${row}`).value = label;
+    summary.getCell(`D${row}`).value = count;
+    for (const cell of [
+      summary.getCell(`A${row}`),
+      summary.getCell(`D${row}`),
+    ]) {
+      cell.fill = fill(index % 2 ? colors.pale : colors.white);
+      cell.font = {
+        name: "Calibri",
+        size: 12,
+        bold: cell.address === `D${row}`,
+        color: { argb: colors.ink },
+      };
+      cell.alignment = {
+        vertical: "middle",
+        horizontal: cell.address === `D${row}` ? "center" : "left",
+        indent: cell.address === `A${row}` ? 1 : 0,
+      };
+    }
   });
   banner(summary, "E10:H10", "CONTROL DE BOLETOS", colors.blue);
   const ticketMetrics: [string, number][] = [
@@ -438,7 +423,7 @@ export async function createAttendanceExcel(
       vertical: "middle",
     };
   });
-  const contentRow = Math.max(18, 14 + hospitals.length);
+  const contentRow = 18;
   banner(
     summary,
     `A${contentRow}:H${contentRow}`,
@@ -458,7 +443,10 @@ export async function createAttendanceExcel(
       "Sin asistencia",
       "Invitados oficiales que no tienen llegada confirmada al momento del corte.",
     ],
-    ["Boletos", "Médicos oficiales con boleto, número asignado y estado de asistencia."],
+    [
+      "Boletos",
+      "Médicos oficiales con boleto, número asignado y estado de asistencia.",
+    ],
   ];
   if (extras.length)
     sections.push([

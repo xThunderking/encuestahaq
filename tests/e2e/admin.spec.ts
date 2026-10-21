@@ -1,13 +1,13 @@
 import { expect, test } from "@playwright/test";
 
-test("shows Google administrator login before the email code step", async ({
+test("the disabled survey admin route returns to the attendance system", async ({
   page,
 }) => {
   await page.goto("/admin");
+  await expect(page).toHaveURL(/\/$/);
   await expect(
-    page.getByRole("heading", { name: "Panel de encuestas" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Continuar con Google" }),
+    page.getByRole("heading", {
+      name: "Lista de invitados desayuno evento Día del Médico",
+    }),
   ).toBeVisible();
 });

@@ -83,15 +83,16 @@ describe("attendance Excel report", () => {
       "Bruno López",
       "Carla Ruiz",
     ]);
-    expect(all.getCell("F7").value).toBe("00017");
-    expect(all.getCell("F7").numFmt).toBe("@");
-    expect(all.getCell("F8").value).toBe("Sin asignar");
-    expect(all.getCell("F9").value).toBe("No aplica");
-    expect(all.getCell("G7").value).toEqual(new Date("2026-10-20T00:00:00Z"));
-    expect(all.getCell("H7").value).toEqual(new Date("1899-12-30T20:07:09Z"));
-    expect(all.getCell("H7").numFmt).toBe("hh:mm:ss");
+    expect(all.getCell("E6").value).toBe("No. de boleto");
+    expect(all.getCell("E7").value).toBe("00017");
+    expect(all.getCell("E7").numFmt).toBe("@");
+    expect(all.getCell("E8").value).toBe("Sin asignar");
+    expect(all.getCell("E9").value).toBe("No aplica");
+    expect(all.getCell("F7").value).toEqual(new Date("2026-10-20T00:00:00Z"));
+    expect(all.getCell("G7").value).toEqual(new Date("1899-12-30T20:07:09Z"));
+    expect(all.getCell("G7").numFmt).toBe("hh:mm:ss");
+    expect(all.getCell("F8").value).toBeNull();
     expect(all.getCell("G8").value).toBeNull();
-    expect(all.getCell("H8").value).toBeNull();
     expect(all.views[0]).toMatchObject({ state: "frozen", ySplit: 6 });
     expect(all.getTable("TodosLosMedicos").headerRow).toBe(true);
     expect(workbook.getWorksheet("Asistieron")!.getCell("B8").value).toBe(
@@ -120,8 +121,8 @@ describe("attendance Excel report", () => {
     const sheet = workbook.getWorksheet("Todos los médicos")!;
     expect(sheet.getCell("B7").value).toBe('=HYPERLINK("https://example.com")');
     expect(sheet.getCell("B7").type).toBe(ExcelJS.ValueType.String);
-    expect(sheet.getCell("F7").value).toBe("=1+1");
-    expect(sheet.getCell("F7").type).toBe(ExcelJS.ValueType.String);
+    expect(sheet.getCell("E7").value).toBe("=1+1");
+    expect(sheet.getCell("E7").type).toBe(ExcelJS.ValueType.String);
   });
 
   it("orders tickets numerically with unassigned numbers at the end", async () => {
@@ -131,7 +132,7 @@ describe("attendance Excel report", () => {
       { ...guests[1], id: "c", doctorName: "Carla", ticketNumber: null },
     ]);
     const sheet = workbook.getWorksheet("Boletos")!;
-    expect([7, 8, 9].map((row) => sheet.getCell(row, 6).value)).toEqual([
+    expect([7, 8, 9].map((row) => sheet.getCell(row, 5).value)).toEqual([
       "0002",
       "0010",
       "Sin asignar",

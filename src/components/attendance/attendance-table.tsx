@@ -18,7 +18,11 @@ import AttendanceImport from "./attendance-import";
 
 type View = "table" | "register" | "stats";
 type Modal = { kind: "ticket" | "undo"; guest: AttendanceGuest } | null;
-type ArrivalConfirmation = { doctorName: string; alreadyRegistered: boolean };
+type ArrivalConfirmation = {
+  doctorName: string;
+  alreadyRegistered: boolean;
+  returnTo: "table" | "register";
+};
 const WELCOME_RETURN_DELAY_MS = 5_000;
 type IconName =
   | "search"
@@ -30,8 +34,7 @@ type IconName =
   | "arrow"
   | "close"
   | "refresh"
-  | "clock"
-  | "hospital";
+  | "clock";
 
 function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   const paths: Record<IconName, ReactNode> = {
@@ -77,11 +80,6 @@ function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
       <>
         <path d="M20 7v5h-5M4 17v-5h5" />
         <path d="M6.1 7a7 7 0 0 1 11.6-2L20 8M4 16l2.3 3A7 7 0 0 0 18 17" />
-      </>
-    ),
-    hospital: (
-      <>
-        <path d="M5 21V5h14v16M9 21v-5h6v5M12 7v6m-3-3h6M3 21h18" />
       </>
     ),
   };
@@ -166,36 +164,13 @@ export default function AttendanceTable({
   const attendancePercent = officialGuests.length
     ? Math.round((registeredCount / officialGuests.length) * 100)
     : 0;
-  const hospitals = useMemo(
-    () =>
-      [...new Set(officialGuests.map((guest) => guest.hospital))].sort((a, b) =>
-        a.localeCompare(b, "es"),
-      ),
-    [officialGuests],
-  );
-  const hospitalStats = useMemo(
-    () =>
-      hospitals
-        .map((hospital) => {
-          const invited = officialGuests.filter(
-            (guest) => guest.hospital === hospital,
-          );
-          return {
-            name: hospital,
-            total: invited.length,
-            registered: invited.filter((guest) => guest.checkedInAt).length,
-          };
-        })
-        .sort((a, b) => b.total - a.total),
-    [officialGuests, hospitals],
-  );
   const filteredGuests = useMemo(() => {
     const terms = normalize(query).split(/\s+/).filter(Boolean);
     if (!terms.length) return [];
     return officialGuests
       .filter((guest) => {
         const text = normalize(
-          `${guest.doctorName} ${guest.hospital} ${guest.ticketNumber ?? ""}`,
+          `${guest.doctorName} ${guest.ticketNumber ?? ""}`,
         );
         return terms.every((term) => text.includes(term));
       })
@@ -258,12 +233,18 @@ export default function AttendanceTable({
       setArrivalConfirmation(null);
       setQuery("");
       setNotice("");
+      setView(arrivalConfirmation.returnTo);
     }, WELCOME_RETURN_DELAY_MS);
     return () => window.clearTimeout(timer);
   }, [arrivalConfirmation]);
 
   useEffect(() => {
-    if (view !== "table" || modal) return;
+    if (modal) return;
+    if (view === "register" && !arrivalConfirmation) {
+      doctorNameInputRef.current?.focus({ preventScroll: true });
+      return;
+    }
+    if (view !== "table") return;
     if (arrivalConfirmation)
       confirmationHeadingRef.current?.focus({ preventScroll: true });
     else searchInputRef.current?.focus({ preventScroll: true });
@@ -318,6 +299,7 @@ export default function AttendanceTable({
         setArrivalConfirmation({
           doctorName: guest.doctorName,
           alreadyRegistered: result.alreadyRegistered === true,
+          returnTo: "table",
         });
         setQuery("");
         setView("table");
@@ -361,7 +343,6 @@ export default function AttendanceTable({
     setSaving(true);
     const payload = {
       doctorName: String(data.get("doctorName") ?? "").trim(),
-      hospital: String(data.get("hospital") ?? "").trim(),
     };
     try {
       const response = await fetch("/api/admin/attendance", {
@@ -389,10 +370,11 @@ export default function AttendanceTable({
       setDraftName("");
       setQuery("");
       setView("register");
-      setNotice(`La llegada de ${guest.doctorName} quedó registrada.`);
-      window.requestAnimationFrame(() =>
-        doctorNameInputRef.current?.focus({ preventScroll: true }),
-      );
+      setArrivalConfirmation({
+        doctorName: guest.doctorName,
+        alreadyRegistered: false,
+        returnTo: "register",
+      });
     } catch (caught) {
       setError(
         caught instanceof Error
@@ -429,19 +411,29 @@ export default function AttendanceTable({
           <div className={styles.brand}>
             <Image
               className={styles.brandLogo}
-              src="/hospital-angeles-queretaro.png"
+              src="/hospital-angeles-queretaro-matched.png"
               alt="Hospital Ángeles Querétaro"
-              width={190}
-              height={112}
+              width={415}
+              height={238}
               preload
             />
             <div>
-              <p className={styles.brandHospital}>Hospital Ángeles Querétaro</p>
+              <p className={styles.brandHospital}>
+                Hospital Ángeles Health System
+              </p>
               <h1>
                 Lista de invitados desayuno evento{" "}
                 <strong>Día del Médico</strong>
               </h1>
             </div>
+            <Image
+              className={styles.brandSecondaryLogo}
+              src="/hospital-angeles-centro-sur-matched.png"
+              alt="Hospital Ángeles Centro Sur"
+              width={415}
+              height={238}
+              preload
+            />
           </div>
           <nav className={styles.menu} aria-label="Navegación principal">
             {(
@@ -534,7 +526,7 @@ export default function AttendanceTable({
           </div>
         )}
 
-        {view === "table" && arrivalConfirmation && (
+        {(view === "table" || view === "register") && arrivalConfirmation && (
           <section
             className={styles.confirmationPanel}
             aria-labelledby="arrival-confirmed-title"
@@ -564,15 +556,19 @@ export default function AttendanceTable({
             </div>
             <div className={styles.confirmationReturn}>
               <p>
-                Volveremos a la bienvenida en 5 segundos para recibir al
-                siguiente médico.
+                {arrivalConfirmation.returnTo === "register"
+                  ? "Volveremos al registro en 5 segundos para continuar con el siguiente médico."
+                  : "Volveremos a la bienvenida en 5 segundos para recibir al siguiente médico."}
               </p>
               <button
                 type="button"
                 className={styles.secondaryButton}
-                onClick={() => navigate("table")}
+                onClick={() => navigate(arrivalConfirmation.returnTo)}
               >
-                Volver a la bienvenida <Icon name="arrow" size={18} />
+                {arrivalConfirmation.returnTo === "register"
+                  ? "Volver al registro"
+                  : "Volver a la bienvenida"}{" "}
+                <Icon name="arrow" size={18} />
               </button>
             </div>
             <div className={styles.returnProgress} aria-hidden="true" />
@@ -588,7 +584,7 @@ export default function AttendanceTable({
               <div>
                 {!isSearching && (
                   <p className={styles.welcomeEyebrow}>
-                    Hospital Ángeles Querétaro
+                    Hospital Ángeles Health System
                   </p>
                 )}
                 <h2 id="guest-list-title">
@@ -640,7 +636,7 @@ export default function AttendanceTable({
                   ref={searchInputRef}
                   id="guest-search"
                   type="search"
-                  aria-label="Buscar médico por nombre, apellidos, hospital o boleto"
+                  aria-label="Buscar médico por nombre, apellidos o boleto"
                   placeholder="Tu nombre o apellidos…"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
@@ -701,7 +697,6 @@ export default function AttendanceTable({
                     <thead>
                       <tr>
                         <th scope="col">Nombre del médico</th>
-                        <th scope="col">Hospital</th>
                         <th scope="col">Boleto</th>
                         <th scope="col">No. de boleto</th>
                         <th scope="col">Estado</th>
@@ -727,14 +722,6 @@ export default function AttendanceTable({
                                 {guest.doctorName}
                               </span>
                             </div>
-                          </td>
-                          <td data-label="Hospital">
-                            <span
-                              className={styles.hospitalName}
-                              data-hospital={guest.hospital}
-                            >
-                              {guest.hospital}
-                            </span>
                           </td>
                           <td data-label="Boleto">
                             <span
@@ -853,7 +840,7 @@ export default function AttendanceTable({
           </section>
         )}
 
-        {view === "register" && (
+        {view === "register" && !arrivalConfirmation && (
           <section
             className={styles.registrationLayout}
             aria-labelledby="registration-title"
@@ -873,7 +860,7 @@ export default function AttendanceTable({
                   <span>1</span>
                   <div>
                     <strong>Captura sus datos</strong>
-                    <p>Nombre completo y hospital de procedencia.</p>
+                    <p>Nombre completo del médico.</p>
                   </div>
                 </li>
                 <li>
@@ -916,22 +903,6 @@ export default function AttendanceTable({
                     value={draftName}
                     onChange={(event) => setDraftName(event.target.value)}
                   />
-                </label>
-                <label className={styles.field} htmlFor="doctor-hospital">
-                  Hospital <span>*</span>
-                  <select
-                    id="doctor-hospital"
-                    name="hospital"
-                    required
-                    defaultValue=""
-                    autoComplete="organization"
-                  >
-                    <option value="" disabled>
-                      Selecciona un hospital
-                    </option>
-                    <option value="HAQ">HAQ</option>
-                    <option value="HACS">HACS</option>
-                  </select>
                 </label>
               </fieldset>
               <div className={styles.formActions}>
@@ -1025,39 +996,6 @@ export default function AttendanceTable({
                   </span>
                 </div>
               </article>
-              <article className={styles.statsCard}>
-                <h3>Asistencia por hospital</h3>
-                <p>Médicos registrados del total de invitados</p>
-                {hospitalStats.length ? (
-                  <div className={styles.hospitalStats}>
-                    {hospitalStats.map((hospital) => (
-                      <div key={hospital.name}>
-                        <div className={styles.barLabel}>
-                          <span>{hospital.name}</span>
-                          <strong>
-                            {hospital.registered}
-                            <small> / {hospital.total}</small>
-                          </strong>
-                        </div>
-                        <meter
-                          min={0}
-                          max={hospital.total}
-                          value={hospital.registered}
-                          aria-label={`${hospital.name}: ${hospital.registered} de ${hospital.total} registrados`}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className={styles.statsEmpty}>
-                    <Icon name="hospital" size={32} />
-                    <p>
-                      Los hospitales aparecerán cuando agregues a los primeros
-                      médicos.
-                    </p>
-                  </div>
-                )}
-              </article>
             </div>
             <section
               className={styles.extrasReport}
@@ -1097,7 +1035,6 @@ export default function AttendanceTable({
                       <li className={styles.extraGuestRow} key={guest.id}>
                         <div>
                           <strong>{guest.doctorName}</strong>
-                          <span>{guest.hospital}</span>
                         </div>
                         <span
                           className={`${styles.statusBadge} ${
@@ -1121,7 +1058,7 @@ export default function AttendanceTable({
           </section>
         )}
         <footer className={styles.appFooter}>
-          <span>Hospital Ángeles Querétaro</span>
+          <span>Hospital Ángeles Health System</span>
           <span>Desayuno · Día del Médico</span>
         </footer>
       </div>
@@ -1180,7 +1117,6 @@ export default function AttendanceTable({
               </span>
               <div>
                 <strong>{modal.guest.doctorName}</strong>
-                <span>{modal.guest.hospital}</span>
               </div>
             </div>
             {modal.kind === "ticket" && (

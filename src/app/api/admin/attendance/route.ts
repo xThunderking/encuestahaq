@@ -97,7 +97,7 @@ export async function POST(request: Request) {
   const result = extraDoctorSchema.safeParse(body);
   if (!result.success) {
     return Response.json(
-      { error: "Revisa el nombre y el hospital del médico." },
+      { error: "Revisa el nombre del médico." },
       { status: 400 },
     );
   }

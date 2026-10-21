@@ -264,7 +264,6 @@ describe("concurrent attendance registration", () => {
         body: JSON.stringify({
           doctorName: "Doctor de prueba",
           hospital: "HACS",
-          hasTicket: true,
         }),
       }),
     );
@@ -320,6 +319,13 @@ describe("concurrent attendance registration", () => {
       expect(documents.get("doctor")?.ticketNumber).toBe("12345");
       expect(creation.status).toBe(201);
       expect(create).toHaveBeenCalledTimes(2);
+      expect(documents.get("new-doctor-1")).toMatchObject({
+        doctorName: "Doctor de prueba",
+        isExtra: true,
+        hasTicket: false,
+        ticketNumber: null,
+        checkedInAt: "server-timestamp",
+      });
     },
   );
 

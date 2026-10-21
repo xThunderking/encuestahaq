@@ -4,7 +4,6 @@ import { normalizeTicketNumber } from "@/modules/attendance/ticket-number";
 export const attendanceGuestSchema = z
   .object({
     doctorName: z.string().trim().min(2).max(120),
-    hospital: z.enum(["HAQ", "HACS"]),
     hasTicket: z.boolean(),
     ticketNumber: z.string().trim().max(40).optional(),
   })
@@ -20,9 +19,7 @@ export const attendanceGuestSchema = z
 export const extraDoctorSchema = z
   .object({
     doctorName: z.string().trim().min(2).max(120),
-    hospital: z.enum(["HAQ", "HACS"]),
-  })
-  .strict();
+  });
 
 export const attendanceActionSchema = z.discriminatedUnion("action", [
   z.object({

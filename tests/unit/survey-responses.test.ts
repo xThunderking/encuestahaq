@@ -1,12 +1,18 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { upsert } = vi.hoisted(() => ({ upsert: vi.fn() }));
+const { collection, create } = vi.hoisted(() => {
+  const create = vi.fn();
+  const document = { create };
+  const collection = vi.fn(() => ({ doc: vi.fn(() => document) }));
+  return { collection, create };
+});
 
-vi.mock("@/lib/db/prisma", () => ({
-  prisma: { surveyResponse: { upsert } },
+vi.mock("@/lib/firebase-admin", () => ({
+  adminDb: { collection },
 }));
-
-import { POST } from "@/app/api/survey-responses/route";
+vi.mock("firebase-admin/firestore", () => ({
+  FieldValue: { serverTimestamp: () => "server-time" },
+}));
 
 const validSubmission = {
   submissionId: "a0df1018-e2dd-4f59-8f8d-aaf45844db27",
@@ -19,12 +25,36 @@ const validSubmission = {
   },
 };
 
-describe("POST /api/survey-responses", () => {
-  beforeEach(() => upsert.mockReset());
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.restoreAllMocks();
+  collection.mockClear();
+  create.mockReset();
+  vi.resetModules();
+});
 
-  it("stores all answers and returns the database date", async () => {
-    const submittedAt = new Date("2026-09-07T18:30:00.000Z");
-    upsert.mockResolvedValue({ id: 1, submittedAt });
+describe("POST /api/survey-responses", () => {
+  it("returns unavailable while the survey module is disabled", async () => {
+    vi.stubEnv("ENABLE_SURVEYS", "false");
+    vi.resetModules();
+    const { POST } = await import("@/app/api/survey-responses/route");
+
+    const response = await POST(
+      new Request("http://localhost/api/survey-responses", {
+        method: "POST",
+        body: JSON.stringify(validSubmission),
+      }),
+    );
+
+    expect(response.status).toBe(404);
+    expect(collection).not.toHaveBeenCalled();
+  });
+
+  it("stores a valid submission when surveys are explicitly enabled", async () => {
+    vi.stubEnv("ENABLE_SURVEYS", "true");
+    vi.resetModules();
+    create.mockResolvedValue(undefined);
+    const { POST } = await import("@/app/api/survey-responses/route");
 
     const response = await POST(
       new Request("http://localhost/api/survey-responses", {
@@ -34,19 +64,25 @@ describe("POST /api/survey-responses", () => {
     );
 
     expect(response.status).toBe(201);
-    await expect(response.json()).resolves.toEqual({
-      id: 1,
-      submittedAt: submittedAt.toISOString(),
+    expect(await response.json()).toMatchObject({
+      id: validSubmission.submissionId,
+      submittedAt: expect.any(String),
     });
-    expect(upsert).toHaveBeenCalledWith(
+    expect(collection).toHaveBeenCalledWith("surveyResponses");
+    expect(create).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { submissionId: validSubmission.submissionId },
-        create: expect.objectContaining({ answers: validSubmission.answers }),
+        submissionId: validSubmission.submissionId,
+        answers: validSubmission.answers,
+        submittedAt: "server-time",
       }),
     );
   });
 
-  it("rejects malformed submissions before accessing the database", async () => {
+  it("rejects malformed enabled submissions before accessing Firestore", async () => {
+    vi.stubEnv("ENABLE_SURVEYS", "true");
+    vi.resetModules();
+    const { POST } = await import("@/app/api/survey-responses/route");
+
     const response = await POST(
       new Request("http://localhost/api/survey-responses", {
         method: "POST",
@@ -55,6 +91,6 @@ describe("POST /api/survey-responses", () => {
     );
 
     expect(response.status).toBe(400);
-    expect(upsert).not.toHaveBeenCalled();
+    expect(collection).not.toHaveBeenCalled();
   });
 });

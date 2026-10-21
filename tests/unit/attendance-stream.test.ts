@@ -24,9 +24,9 @@ describe("attendance SSE lifecycle", () => {
     vi.restoreAllMocks();
   });
 
-  it("delivers the same change immediately to five connected computers and detaches them", async () => {
+  it("delivers changes to six registration computers and one monitoring tablet", async () => {
     const listeners: ((guests: AttendanceGuest[]) => void)[] = [];
-    const detach = Array.from({ length: 5 }, () => vi.fn());
+    const detach = Array.from({ length: 7 }, () => vi.fn());
     const readers = detach.map((unsubscribe) =>
       createAttendanceStream(new AbortController().signal, (onGuests) => {
         listeners.push(onGuests);
@@ -49,6 +49,38 @@ describe("attendance SSE lifecycle", () => {
       expect(message).toBe(
         `event: guests\ndata: ${JSON.stringify([updated])}\n\n`,
       );
+      await reader.cancel();
+    }
+    detach.forEach((unsubscribe) => expect(unsubscribe).toHaveBeenCalledOnce());
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("broadcasts a 570-doctor snapshot to all seven connected screens", async () => {
+    const guests = Array.from({ length: 570 }, (_, index) => ({
+      ...guest,
+      id: `doctor-${index}`,
+      doctorName: `Médico de prueba ${index}`,
+    }));
+    const listeners: ((guests: AttendanceGuest[]) => void)[] = [];
+    const detach = Array.from({ length: 7 }, () => vi.fn());
+    const readers = detach.map((unsubscribe) =>
+      createAttendanceStream(new AbortController().signal, (onGuests) => {
+        listeners.push(onGuests);
+        return unsubscribe;
+      }).getReader(),
+    );
+
+    for (const reader of readers)
+      expect(decode(await reader.read())).toContain("retry: 2000");
+    listeners.forEach((notify) => notify(guests));
+
+    for (const reader of readers) {
+      const message = decode(await reader.read());
+      const payload = JSON.parse(
+        message.replace(/^event: guests\ndata: /, "").trim(),
+      );
+      expect(payload).toHaveLength(570);
+      expect(payload[569].doctorName).toBe("Médico de prueba 569");
       await reader.cancel();
     }
     detach.forEach((unsubscribe) => expect(unsubscribe).toHaveBeenCalledOnce());
