@@ -36,8 +36,6 @@ const registeredIndexes = new Set([0, 1, 2, 7, 13]);
 const demoRows = names.map((doctorName, index) => {
   const sequence = String(index + 1).padStart(4, "0");
   const hasTicket = index % 4 !== 1;
-  const ticketNumber =
-    hasTicket && index % 3 !== 0 ? `PRUEBA-${sequence}` : null;
   const checkedInAt = registeredIndexes.has(index)
     ? Timestamp.fromDate(new Date(Date.now() - (index + 1) * 60_000))
     : null;
@@ -45,9 +43,10 @@ const demoRows = names.map((doctorName, index) => {
     id: `attendance-dia-medico-demo-${sequence}`,
     data: {
       doctorName,
-      hospital: index % 3 === 0 ? "HAQ" : "HACS",
+      isExtra: false,
       hasTicket,
-      ticketNumber,
+      ticketNumber: null,
+      ticketNumberNormalized: null,
       checkedInAt,
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),

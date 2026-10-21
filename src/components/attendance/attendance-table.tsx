@@ -19,6 +19,10 @@ import {
   isValidTicketNumber,
   TICKET_NUMBER_FORMAT_MESSAGE,
 } from "@/modules/attendance/ticket-number-format";
+import {
+  createAttendanceRequestId,
+  saveAttendance,
+} from "@/modules/attendance/save-attendance";
 
 type View = "table" | "register" | "stats";
 type Modal = { kind: "ticket" | "undo"; guest: AttendanceGuest } | null;
@@ -147,6 +151,11 @@ export default function AttendanceTable({
   const doctorNameInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const confirmationHeadingRef = useRef<HTMLHeadingElement>(null);
+  const mutationInFlight = useRef(false);
+  const extraSubmission = useRef<{
+    doctorName: string;
+    requestId: string;
+  } | null>(null);
   const isSearching = query.trim().length > 0;
 
   const officialGuests = useMemo(
@@ -272,32 +281,21 @@ export default function AttendanceTable({
     action: "check-in" | "check-in-no-ticket" | "undo",
     number?: string,
   ) {
+    if (mutationInFlight.current) return false;
+    mutationInFlight.current = true;
     setError("");
     setModalError("");
     setNotice("");
     setPendingId(guest.id);
     try {
-      const response = await fetch("/api/admin/attendance", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: guest.id,
-          action,
-          ...(action === "check-in" && number ? { ticketNumber: number } : {}),
-          ...(action === "undo"
-            ? { expectedCheckedInAt: guest.checkedInAt }
-            : {}),
-        }),
+      const result = await saveAttendance("PATCH", {
+        id: guest.id,
+        action,
+        ...(action === "check-in" && number ? { ticketNumber: number } : {}),
+        ...(action === "undo"
+          ? { expectedCheckedInAt: guest.checkedInAt }
+          : {}),
       });
-      const result = (await response.json()) as {
-        error?: string;
-        alreadyRegistered?: boolean;
-      };
-      if (!response.ok)
-        throw new Error(
-          result.error ??
-            "No pudimos guardar la asistencia. Inténtalo nuevamente.",
-        );
       void refreshGuests(true);
       if (action !== "undo") {
         setArrivalConfirmation({
@@ -322,16 +320,22 @@ export default function AttendanceTable({
       else setError(message);
       return false;
     } finally {
+      mutationInFlight.current = false;
       setPendingId(null);
     }
   }
 
   function registerArrival(guest: AttendanceGuest) {
+    if (mutationInFlight.current) return;
     setError("");
     setNotice("");
     setModalError("");
     if (guest.hasTicket) {
-      setTicketNumber(guest.ticketNumber ?? "");
+      setTicketNumber(
+        guest.ticketNumber && isValidTicketNumber(guest.ticketNumber)
+          ? guest.ticketNumber
+          : "",
+      );
       setModal({ kind: "ticket", guest });
     } else {
       void updateAttendance(guest, "check-in");
@@ -340,6 +344,8 @@ export default function AttendanceTable({
 
   async function addGuest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (mutationInFlight.current) return;
+    mutationInFlight.current = true;
     const form = event.currentTarget;
     const data = new FormData(form);
     setError("");
@@ -349,13 +355,15 @@ export default function AttendanceTable({
       doctorName: String(data.get("doctorName") ?? "").trim(),
     };
     try {
-      const response = await fetch("/api/admin/attendance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      if (extraSubmission.current?.doctorName !== payload.doctorName)
+        extraSubmission.current = {
+          ...payload,
+          requestId: createAttendanceRequestId(),
+        };
+      const result = await saveAttendance("POST", {
+        ...extraSubmission.current,
       });
-      const result = (await response.json()) as { id?: string; error?: string };
-      if (!response.ok || !result.id)
+      if (!result.id)
         throw new Error(
           result.error ??
             "No pudimos agregar al médico. Revisa los datos e inténtalo nuevamente.",
@@ -369,6 +377,7 @@ export default function AttendanceTable({
         checkedInAt: new Date().toISOString(),
       };
       rememberGuest(guest);
+      extraSubmission.current = null;
       void refreshGuests(true);
       form.reset();
       setDraftName("");
@@ -386,6 +395,7 @@ export default function AttendanceTable({
           : "No pudimos agregar al médico.",
       );
     } finally {
+      mutationInFlight.current = false;
       setSaving(false);
     }
   }

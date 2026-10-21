@@ -32,31 +32,11 @@ async function findTicketConflict(
     normalizedTicketNumber,
   );
   const reservation = await transaction.get(reservationReference);
-  const ticketQuery = guestsCollection();
-  const normalizedMatches = await transaction.get(
-    ticketQuery.where("ticketNumberNormalized", "==", normalizedTicketNumber),
-  );
-  const enteredNumberMatches = await transaction.get(
-    ticketQuery.where("ticketNumber", "==", ticketNumber.trim()),
-  );
-  const normalizedLegacyMatches =
-    normalizedTicketNumber === ticketNumber.trim()
-      ? null
-      : await transaction.get(
-          ticketQuery.where("ticketNumber", "==", normalizedTicketNumber),
-        );
-
-  const hasOtherGuest = [
-    ...normalizedMatches.docs,
-    ...enteredNumberMatches.docs,
-    ...(normalizedLegacyMatches?.docs ?? []),
-  ].some((document) => document.id !== guestId);
   const reservationData = reservation.data();
 
-  if (
-    hasOtherGuest ||
-    (reservation.exists && reservationData?.guestId !== guestId)
-  ) {
+  // Every ticket write owns this unique reservation in the same transaction.
+  // Avoid collection queries here: they add locks across unrelated arrivals.
+  if (reservation.exists && reservationData?.guestId !== guestId) {
     return null;
   }
 
@@ -103,10 +83,30 @@ export async function POST(request: Request) {
   }
 
   try {
-    const reference = guestsCollection().doc();
+    const { requestId, ...guestData } = result.data;
+    // A retry after a lost response must resolve to the same extra doctor.
+    const reference = requestId
+      ? guestsCollection().doc(`extra-${requestId.toLowerCase()}`)
+      : guestsCollection().doc();
     const outcome = await adminDb.runTransaction(async (transaction) => {
+      if (requestId) {
+        const existing = await transaction.get(reference);
+        if (existing.exists) {
+          const data = existing.data();
+          if (
+            data?.isExtra !== true ||
+            data.doctorName !== guestData.doctorName
+          )
+            return {
+              status: 409,
+              error:
+                "La solicitud ya se utilizó con otros datos. Revisa el nombre del médico.",
+            };
+          return { status: 200, id: reference.id };
+        }
+      }
       transaction.create(reference, {
-        ...result.data,
+        ...guestData,
         isExtra: true,
         hasTicket: false,
         ticketNumber: null,

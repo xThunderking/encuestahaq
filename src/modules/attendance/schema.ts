@@ -22,11 +22,19 @@ export const attendanceGuestSchema = z
 
 export const extraDoctorSchema = z.object({
   doctorName: z.string().trim().min(2).max(120),
+  requestId: z.uuid().optional(),
 });
+
+const guestIdSchema = z
+  .string()
+  .min(1)
+  .max(150)
+  .regex(/^[^/\u0000-\u001f]+$/)
+  .refine((id) => id !== "." && id !== "..");
 
 export const attendanceActionSchema = z.discriminatedUnion("action", [
   z.object({
-    id: z.string().min(1).max(150),
+    id: guestIdSchema,
     action: z.literal("check-in"),
     ticketNumber: z
       .string()
@@ -34,11 +42,11 @@ export const attendanceActionSchema = z.discriminatedUnion("action", [
       .optional(),
   }),
   z.object({
-    id: z.string().min(1).max(150),
+    id: guestIdSchema,
     action: z.literal("check-in-no-ticket"),
   }),
   z.object({
-    id: z.string().min(1).max(150),
+    id: guestIdSchema,
     action: z.literal("undo"),
     expectedCheckedInAt: z.iso.datetime(),
   }),

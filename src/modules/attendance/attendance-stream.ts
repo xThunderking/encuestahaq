@@ -1,6 +1,6 @@
 import type { AttendanceGuest } from "./get-attendance-guests";
 
-type Subscribe = (
+export type AttendanceSubscribe = (
   onGuests: (guests: AttendanceGuest[]) => void,
   onError: (error: Error) => void,
 ) => () => void;
@@ -11,7 +11,7 @@ export const STREAM_HEARTBEAT_MS = 15_000;
 
 export function createAttendanceStream(
   signal: AbortSignal,
-  subscribe: Subscribe,
+  subscribe: AttendanceSubscribe,
 ) {
   const encoder = new TextEncoder();
   let dispose = () => {};

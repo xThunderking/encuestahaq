@@ -150,20 +150,100 @@ describe("concurrent attendance registration", () => {
     resetQueue();
   });
 
-  it("registers five different doctors using independent transactions", async () => {
-    for (let i = 0; i < 5; i++)
+  it("registers six different doctors using independent transactions", async () => {
+    for (let i = 0; i < 6; i++)
       documents.set(String(i), { hasTicket: true, checkedInAt: null });
     const responses = await Promise.all(
-      Array.from({ length: 5 }, (_, i) =>
+      Array.from({ length: 6 }, (_, i) =>
         checkIn(String(i), String(i + 1).padStart(3, "0")),
       ),
     );
     expect(responses.every((response) => response.ok)).toBe(true);
-    expect(update).toHaveBeenCalledTimes(5);
-    for (let i = 0; i < 5; i++)
+    expect(update).toHaveBeenCalledTimes(6);
+    for (let i = 0; i < 6; i++)
       expect(documents.get(String(i))?.ticketNumber).toBe(
         String(i + 1).padStart(3, "0"),
       );
+  });
+
+  it.each([
+    "000",
+    "1",
+    "01",
+    "1000",
+    "0123",
+    "-01",
+    "1e2",
+    "12A",
+    " 001",
+    "001 ",
+    "００１",
+    "001\n",
+  ])(
+    "rejects invalid ticket %j before a database transaction",
+    async (ticket) => {
+      documents.set("doctor", { hasTicket: true, checkedInAt: null });
+      expect((await checkIn("doctor", ticket)).status).toBe(400);
+      expect(runTransaction).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["001", "999"])(
+    "accepts the ticket boundary %s exactly",
+    async (ticket) => {
+      documents.set("doctor", { hasTicket: true, checkedInAt: null });
+      expect((await checkIn("doctor", ticket)).status).toBe(200);
+      expect(documents.get("doctor")?.ticketNumber).toBe(ticket);
+    },
+  );
+
+  it("assigns a contested ticket to only one of six doctors", async () => {
+    for (let i = 0; i < 6; i++)
+      documents.set(String(i), { hasTicket: true, checkedInAt: null });
+    const responses = await Promise.all(
+      Array.from({ length: 6 }, (_, i) => checkIn(String(i), "555")),
+    );
+    expect(responses.map((response) => response.status).sort()).toEqual([
+      200, 409, 409, 409, 409, 409,
+    ]);
+    expect(update).toHaveBeenCalledOnce();
+    expect(reservations.size).toBe(1);
+  });
+
+  it.each(["bad/id", ".", ".."])(
+    "rejects an invalid guest path %s",
+    async (id) => {
+      expect((await checkIn(id, "001")).status).toBe(400);
+      expect(runTransaction).not.toHaveBeenCalled();
+    },
+  );
+
+  it("creates one extra when six requests retry the same submission", async () => {
+    const payload = {
+      doctorName: "Doctora extra",
+      requestId: "17823961-0365-4e70-91d9-71482308cb09",
+    };
+    const send = (doctorName = payload.doctorName) =>
+      POST(
+        new Request("http://localhost/api/admin/attendance", {
+          method: "POST",
+          body: JSON.stringify({ ...payload, doctorName }),
+        }),
+      );
+    const responses = await Promise.all(
+      Array.from({ length: 6 }, () => send()),
+    );
+    expect(responses.map((response) => response.status).sort()).toEqual([
+      200, 200, 200, 200, 200, 201,
+    ]);
+    const bodies = await Promise.all(
+      responses.map((response) => response.json()),
+    );
+    expect(new Set(bodies.map((body) => body.id)).size).toBe(1);
+    expect(create).toHaveBeenCalledOnce();
+    expect(documents.size).toBe(1);
+    expect((await send("Otro médico")).status).toBe(409);
+    expect(documents.size).toBe(1);
   });
 
   it("preserves the first arrival and ticket when another computer registers the same doctor", async () => {
